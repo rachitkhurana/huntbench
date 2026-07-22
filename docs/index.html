@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Huntbench — Your job hunt, as mission control</title>
+<meta name="description" content="A tiny, dependency-free toolkit + local dashboard for running a serious job search, driven by your own coding agent. Discover roles, score fit, track your pipeline, tailor CVs, and keep every recruiter email in one place. Your data never leaves your machine." />
+<meta property="og:title" content="Huntbench — Your job hunt, as mission control" />
+<meta property="og:description" content="A local, agent-native job-search command center. Zero install, zero API keys, your data stays on your machine." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%235e6ad2'/%3E%3Ctext x='50' y='72' font-size='64' font-family='system-ui,sans-serif' font-weight='700' fill='white' text-anchor='middle'%3Eh%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #fbfbfd;
+    --bg-panel: #f7f8fa;
+    --ink: #0d0e10;
+    --ink-2: #3c4149;
+    --muted: #6b7280;
+    --muted-2: #8a8f98;
+    --line: #ebedf0;
+    --line-2: #e2e4e9;
+    --accent: #5e6ad2;
+    --accent-ink: #4a55c5;
+    --accent-soft: #eef0fb;
+    --radius: 14px;
+    --radius-lg: 20px;
+    --shadow-sm: 0 1px 2px rgba(13,14,16,.04), 0 1px 3px rgba(13,14,16,.06);
+    --shadow-md: 0 10px 30px -12px rgba(13,14,16,.18), 0 4px 12px -6px rgba(13,14,16,.08);
+    --shadow-lg: 0 40px 80px -28px rgba(45,50,110,.30), 0 12px 32px -12px rgba(13,14,16,.12);
+    --maxw: 1120px;
+    --ease: cubic-bezier(.16,.84,.44,1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  img { max-width: 100%; display: block; }
+  ::selection { background: rgba(94,106,210,.18); }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Nav ---------- */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 60px;
+    display: flex; align-items: center;
+    background: rgba(255,255,255,.72);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .3s var(--ease), background .3s var(--ease);
+  }
+  nav.scrolled { border-bottom-color: var(--line); }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 15px; letter-spacing: -.01em; }
+  .brand .mark {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(155deg, #7d87e6, #5e6ad2);
+    color: #fff; display: grid; place-items: center;
+    font-weight: 700; font-size: 15px;
+    box-shadow: 0 2px 8px -1px rgba(94,106,210,.5);
+  }
+  .nav-links { display: flex; align-items: center; gap: 6px; }
+  .nav-links a.link { color: var(--muted); font-size: 14px; font-weight: 500; padding: 8px 12px; border-radius: 8px; transition: color .2s, background .2s; }
+  .nav-links a.link:hover { color: var(--ink); background: var(--bg-panel); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 550; letter-spacing: -.01em;
+    padding: 8px 15px; border-radius: 9px; cursor: pointer;
+    border: 1px solid transparent; transition: all .2s var(--ease); white-space: nowrap;
+  }
+  .btn svg { width: 15px; height: 15px; }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 1px 2px rgba(74,85,197,.4), inset 0 1px 0 rgba(255,255,255,.14); }
+  .btn-primary:hover { background: var(--accent-ink); transform: translateY(-1px); box-shadow: 0 6px 16px -4px rgba(74,85,197,.5); }
+  .btn-ghost { background: var(--bg); color: var(--ink); border-color: var(--line-2); box-shadow: var(--shadow-sm); }
+  .btn-ghost:hover { border-color: #d3d6dd; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .btn-sm { padding: 7px 13px; font-size: 13.5px; }
+
+  /* ---------- Hero ---------- */
+  header { position: relative; padding: 148px 0 64px; text-align: center; overflow: hidden; }
+  .glow {
+    position: absolute; z-index: 0; pointer-events: none;
+    left: 50%; top: -80px; transform: translateX(-50%);
+    width: 1100px; height: 720px;
+    background:
+      radial-gradient(46% 40% at 50% 32%, rgba(94,106,210,.20), transparent 70%),
+      radial-gradient(30% 26% at 30% 20%, rgba(139,147,232,.20), transparent 70%),
+      radial-gradient(30% 26% at 72% 24%, rgba(180,160,240,.16), transparent 70%);
+    filter: blur(8px);
+  }
+  .hero-grid {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(60% 55% at 50% 30%, #000 0%, transparent 78%);
+    -webkit-mask-image: radial-gradient(60% 55% at 50% 30%, #000 0%, transparent 78%);
+    opacity: .5;
+  }
+  header .wrap { position: relative; z-index: 1; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 500; color: var(--ink-2);
+    background: rgba(255,255,255,.7); border: 1px solid var(--line-2);
+    padding: 6px 8px 6px 14px; border-radius: 100px; margin-bottom: 26px;
+    box-shadow: var(--shadow-sm); backdrop-filter: blur(6px);
+  }
+  .pill b { color: var(--accent-ink); font-weight: 600; }
+  .pill .tag { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; font-size: 11px; letter-spacing: .02em; padding: 3px 8px; border-radius: 100px; }
+
+  h1 {
+    font-size: clamp(38px, 6.2vw, 66px);
+    line-height: 1.03; letter-spacing: -.035em; font-weight: 750;
+    color: var(--ink); margin: 0 auto 22px; max-width: 15ch;
+  }
+  h1 .grad {
+    background: linear-gradient(110deg, #5e6ad2 10%, #8b70e0 55%, #b06ad0 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sub {
+    font-size: clamp(16px, 2vw, 19px); color: var(--muted);
+    max-width: 60ch; margin: 0 auto 34px; line-height: 1.6; font-weight: 420;
+  }
+  .sub b { color: var(--ink-2); font-weight: 600; }
+
+  .cta-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .clone {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: #0d0e10; color: #e9eaee; border-radius: 11px;
+    padding: 10px 10px 10px 18px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px;
+    box-shadow: var(--shadow-md); border: 1px solid #2a2c31;
+  }
+  .clone .dollar { color: #6b7280; }
+  .clone code { color: #e9eaee; }
+  .clone .accent { color: #a9b0ff; }
+  .copy-btn {
+    display: inline-grid; place-items: center; width: 30px; height: 30px;
+    border-radius: 7px; background: #1c1e22; border: 1px solid #34363c; cursor: pointer;
+    color: #b6bac2; transition: all .18s;
+  }
+  .copy-btn:hover { background: #2a2c31; color: #fff; }
+  .copy-btn svg { width: 15px; height: 15px; }
+  .copy-btn.copied { color: #7ee0a8; border-color: #2e6b47; }
+
+  .hero-note { margin-top: 20px; font-size: 13px; color: var(--muted-2); display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+  .hero-note span { display: inline-flex; align-items: center; gap: 6px; }
+  .hero-note .dot { width: 5px; height: 5px; border-radius: 50%; background: #5fbf8b; box-shadow: 0 0 0 3px rgba(95,191,139,.16); }
+
+  /* ---------- Browser frame ---------- */
+  .shot-wrap { position: relative; margin-top: 60px; }
+  .shot-wrap.hero-shot { margin-top: 66px; }
+  .browser {
+    border-radius: 14px; overflow: hidden; background: #fff;
+    border: 1px solid var(--line-2); box-shadow: var(--shadow-lg);
+  }
+  .browser .bar {
+    display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px;
+    background: linear-gradient(#fcfcfd, #f6f7f9); border-bottom: 1px solid var(--line);
+  }
+  .browser .dots { display: flex; gap: 7px; }
+  .browser .dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .browser .dots i:nth-child(1){ background:#ff5f57; }
+  .browser .dots i:nth-child(2){ background:#febc2e; }
+  .browser .dots i:nth-child(3){ background:#28c840; }
+  .browser .url {
+    flex: 1; max-width: 340px; margin: 0 auto; height: 24px;
+    background: #fff; border: 1px solid var(--line-2); border-radius: 7px;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    font-size: 12px; color: var(--muted-2); font-family: 'JetBrains Mono', monospace;
+  }
+  .browser .url svg { width: 11px; height: 11px; opacity: .7; }
+  .browser .body { background: #fff; }
+  .browser .body img { width: 100%; height: auto; display: block; }
+  .hero-shot .browser { box-shadow: 0 60px 120px -40px rgba(45,50,110,.42), 0 24px 60px -24px rgba(13,14,16,.16); }
+
+  /* ---------- Sections ---------- */
+  section { position: relative; padding: 92px 0; }
+  .eyebrow {
+    display: inline-block; font-size: 12.5px; font-weight: 650; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--accent-ink); margin-bottom: 14px;
+  }
+  h2 { font-size: clamp(28px, 4vw, 42px); line-height: 1.1; letter-spacing: -.03em; font-weight: 720; max-width: 20ch; }
+  .section-head { text-align: center; max-width: 640px; margin: 0 auto 56px; }
+  .section-head h2 { margin: 0 auto 16px; }
+  .section-head p { color: var(--muted); font-size: 17px; line-height: 1.6; }
+
+  .soft-bg { background: var(--bg-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+  /* ---------- How it works ---------- */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .step {
+    background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg);
+    padding: 28px 26px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+    transition: transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s;
+  }
+  .step:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line-2); }
+  .step .num {
+    width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    font-size: 13px; font-weight: 700; color: var(--accent-ink);
+    background: var(--accent-soft); margin-bottom: 18px;
+  }
+  .step h3 { font-size: 17px; font-weight: 640; letter-spacing: -.02em; margin-bottom: 8px; }
+  .step p { color: var(--muted); font-size: 14.5px; line-height: 1.6; }
+  .step code, .inline-code {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    background: var(--bg-panel); border: 1px solid var(--line); color: var(--accent-ink);
+    padding: 1px 6px; border-radius: 5px;
+  }
+  .say { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Feature showcase (alternating) ---------- */
+  .feature {
+    display: grid; grid-template-columns: 1fr 1.15fr; gap: 56px; align-items: center;
+    padding: 34px 0;
+  }
+  .feature.rev { grid-template-columns: 1.15fr 1fr; }
+  .feature.rev .f-copy { order: 2; }
+  .feature.rev .f-media { order: 1; }
+  .f-icon {
+    width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent-ink); margin-bottom: 18px;
+  }
+  .f-icon svg { width: 21px; height: 21px; }
+  .f-copy h3 { font-size: clamp(22px, 2.6vw, 28px); letter-spacing: -.025em; font-weight: 700; line-height: 1.15; margin-bottom: 14px; }
+  .f-copy p { color: var(--muted); font-size: 16px; line-height: 1.65; margin-bottom: 18px; }
+  .f-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .f-list li { display: flex; gap: 11px; align-items: flex-start; font-size: 14.5px; color: var(--ink-2); }
+  .f-list li svg { width: 17px; height: 17px; color: var(--accent); flex-shrink: 0; margin-top: 2px; }
+  .f-media .browser { box-shadow: var(--shadow-md); }
+  .f-media .browser:hover { box-shadow: var(--shadow-lg); }
+  .f-media .browser { transition: box-shadow .4s var(--ease), transform .4s var(--ease); }
+
+  /* ---------- Feature grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card {
+    background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 24px; transition: transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line-2); }
+  .card .ci { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-ink); margin-bottom: 14px; }
+  .card .ci svg { width: 18px; height: 18px; }
+  .card h4 { font-size: 15.5px; font-weight: 640; letter-spacing: -.015em; margin-bottom: 6px; }
+  .card p { color: var(--muted); font-size: 14px; line-height: 1.55; }
+
+  /* ---------- Quickstart ---------- */
+  .qs { display: grid; grid-template-columns: 1fr 1.1fr; gap: 48px; align-items: center; }
+  .terminal {
+    background: #0d0e10; border-radius: var(--radius-lg); overflow: hidden;
+    border: 1px solid #26282d; box-shadow: var(--shadow-lg);
+  }
+  .terminal .tbar { display: flex; align-items: center; gap: 7px; padding: 12px 15px; border-bottom: 1px solid #22242a; }
+  .terminal .tbar i { width: 11px; height: 11px; border-radius: 50%; }
+  .terminal .tbar i:nth-child(1){ background:#ff5f57; } .terminal .tbar i:nth-child(2){ background:#febc2e; } .terminal .tbar i:nth-child(3){ background:#28c840; }
+  .terminal .tbar span { margin-left: 8px; font-size: 12px; color: #6b7280; font-family: 'JetBrains Mono', monospace; }
+  .terminal pre { padding: 20px 22px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.85; color: #d7dae0; }
+  .terminal .c { color: #6b7280; }
+  .terminal .p { color: #5fbf8b; }
+  .terminal .a { color: #a9b0ff; }
+  .qs-copy h2 { margin-bottom: 18px; }
+  .qs-copy p { color: var(--muted); font-size: 16px; line-height: 1.65; margin-bottom: 16px; }
+  .qs-req { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+  .qs-req .chip {
+    font-size: 12.5px; font-weight: 500; color: var(--ink-2);
+    background: var(--bg-panel); border: 1px solid var(--line); border-radius: 100px; padding: 6px 13px;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .qs-req .chip svg { width: 13px; height: 13px; color: var(--accent); }
+
+  /* ---------- CTA band ---------- */
+  .cta-band { text-align: center; }
+  .cta-card {
+    position: relative; overflow: hidden;
+    background: linear-gradient(145deg, #5e6ad2, #4a55c5 55%, #6f5fd0);
+    border-radius: 26px; padding: 66px 32px;
+    box-shadow: 0 40px 90px -30px rgba(74,85,197,.55);
+  }
+  .cta-card::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(60% 120% at 20% 0%, rgba(255,255,255,.18), transparent 60%);
+  }
+  .cta-card::after {
+    content: ""; position: absolute; inset: 0; opacity: .5;
+    background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(70% 90% at 50% 0%, #000, transparent 75%);
+    -webkit-mask-image: radial-gradient(70% 90% at 50% 0%, #000, transparent 75%);
+  }
+  .cta-card > * { position: relative; z-index: 1; }
+  .cta-card h2 { color: #fff; margin: 0 auto 14px; max-width: 18ch; }
+  .cta-card p { color: rgba(255,255,255,.82); font-size: 17px; max-width: 52ch; margin: 0 auto 30px; }
+  .cta-card .btn-white { background: #fff; color: var(--accent-ink); box-shadow: 0 8px 24px -8px rgba(0,0,0,.3); }
+  .cta-card .btn-white:hover { transform: translateY(-2px); box-shadow: 0 14px 34px -10px rgba(0,0,0,.36); }
+  .cta-card .btn-outline { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.28); }
+  .cta-card .btn-outline:hover { background: rgba(255,255,255,.18); transform: translateY(-2px); }
+
+  /* ---------- Footer ---------- */
+  footer { border-top: 1px solid var(--line); padding: 44px 0 40px; background: var(--bg-soft); }
+  footer .wrap { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  footer .fbrand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; }
+  footer .flinks { display: flex; gap: 22px; font-size: 14px; }
+  footer .flinks a { color: var(--muted); transition: color .2s; }
+  footer .flinks a:hover { color: var(--ink); }
+  footer .fnote { width: 100%; font-size: 12.5px; color: var(--muted-2); padding-top: 8px; }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; } .reveal.d2 { transition-delay: .16s; } .reveal.d3 { transition-delay: .24s; }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 900px) {
+    .steps, .grid { grid-template-columns: 1fr; }
+    .feature, .feature.rev, .qs { grid-template-columns: 1fr; gap: 30px; }
+    .feature.rev .f-copy, .feature.rev .f-media { order: 0; }
+    .f-media { order: 2 !important; }
+    header { padding: 120px 0 40px; }
+    section { padding: 68px 0; }
+    .nav-links .link { display: none; }
+  }
+  @media (max-width: 560px) {
+    .clone { font-size: 12px; padding: 9px 9px 9px 14px; }
+    .hero-note { gap: 12px; }
+    .cta-card { padding: 48px 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <span class="mark">h</span> Huntbench
+    </a>
+    <div class="nav-links">
+      <a class="link" href="#how">How it works</a>
+      <a class="link" href="#features">Features</a>
+      <a class="link" href="#start">Quickstart</a>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/rachitkhurana/huntbench" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Star on GitHub
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header id="top">
+  <div class="hero-grid"></div>
+  <div class="glow"></div>
+  <div class="wrap">
+    <div class="pill reveal">
+      <span class="tag">OPEN SOURCE</span>
+      <span>Bring your own coding agent — <b>your data stays local</b></span>
+    </div>
+    <h1 class="reveal d1">Your job hunt,<br><span class="grad">as mission control.</span></h1>
+    <p class="sub reveal d2">
+      A tiny, dependency-free toolkit and a beautiful local dashboard for running a serious job search.
+      Discover roles, score them for fit, track your pipeline, tailor CVs, and keep every recruiter
+      email in one place — driven by <b>your own coding agent</b>.
+    </p>
+    <div class="cta-row reveal d3">
+      <div class="clone">
+        <span class="dollar">$</span>
+        <code>git clone <span class="accent">…/huntbench</span> && python3 jobsdb.py serve</code>
+        <button class="copy-btn" id="copyBtn" aria-label="Copy clone command" title="Copy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+      <a class="btn btn-primary" href="https://github.com/rachitkhurana/huntbench" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+    </div>
+    <div class="hero-note reveal d3">
+      <span><span class="dot"></span> No accounts</span>
+      <span><span class="dot"></span> No API keys</span>
+      <span><span class="dot"></span> Python 3 stdlib only</span>
+      <span><span class="dot"></span> MIT licensed</span>
+    </div>
+
+    <div class="shot-wrap hero-shot reveal d3">
+      <div class="browser">
+        <div class="bar">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="url">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            127.0.0.1:8765
+          </div>
+        </div>
+        <div class="body"><img src="assets/shot-list.jpg" alt="Huntbench dashboard — status-grouped job list with fit scores" loading="eager" /></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- HOW IT WORKS -->
+<section id="how" class="soft-bg">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Bring your own agent</span>
+      <h2>The smart parts are done by <em>your</em> LLM.</h2>
+      <p>Huntbench is the deterministic engine and the local UI. Your coding agent — Claude Code, Codex, Cursor — does the finding, tailoring, and form-filling using tools you already have. Nothing phones home.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="num">1</div>
+        <h3>Clone &amp; serve</h3>
+        <p>One command. <code>python3 jobsdb.py serve</code> opens the dashboard with a live demo dataset — no install, no signup, no keys.</p>
+      </div>
+      <div class="step reveal d1">
+        <div class="num">2</div>
+        <h3>Say <span class="say">“set me up”</span></h3>
+        <p>Open the folder in your agent. It reads <code>AGENTS.md</code>, interviews you, and writes your profile and master CV. The dashboard detects it and you're in.</p>
+      </div>
+      <div class="step reveal d2">
+        <div class="num">3</div>
+        <h3>Hunt from one board</h3>
+        <p>Scan ATS boards, triage the pipeline, generate tailored CVs, and prep applications — your agent fills forms and <b>stops before submit</b> for your review.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE SHOWCASE -->
+<section id="features">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">The dashboard</span>
+      <h2>Everything about the hunt, in one calm place.</h2>
+      <p>A light, Linear-style workspace — a status-grouped list, a drag-to-move board, and an inbox that turns recruiter email into a timeline.</p>
+    </div>
+
+    <!-- feature 1 -->
+    <div class="feature reveal">
+      <div class="f-copy">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.2" fill="currentColor"/><circle cx="3.5" cy="12" r="1.2" fill="currentColor"/><circle cx="3.5" cy="18" r="1.2" fill="currentColor"/></svg>
+        </div>
+        <h3>A pipeline that scores itself</h3>
+        <p>Every role lands with a 1–5 fit score from your target roles and title filters. Rows carry the seniority, stack, location and work-mode at a glance — grouped by status so you always know what's next.</p>
+        <ul class="f-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> New → Applied → Interviewing, at a glance</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Region &amp; work-mode filters in the sidebar</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> A ⌘K palette to jump or run anything</li>
+        </ul>
+      </div>
+      <div class="f-media">
+        <div class="browser"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">127.0.0.1:8765</div></div><div class="body"><img src="assets/shot-palette.jpg" alt="Command palette over the job list" loading="lazy" /></div></div>
+      </div>
+    </div>
+
+    <!-- feature 2 -->
+    <div class="feature rev reveal">
+      <div class="f-copy">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.2"/><rect x="10" y="4" width="5" height="11" rx="1.2"/><rect x="17" y="4" width="4" height="7" rx="1.2"/></svg>
+        </div>
+        <h3>Drag your way down the funnel</h3>
+        <p>A Kanban board with a column per stage — New, Shortlisted, Applied, Screening, Interviewing. Drag a card to move it; the fit badge and company travel with it. It's the same pipeline, seen the way you think about it.</p>
+        <ul class="f-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Drag-to-move between stages</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Live counts and status rings per column</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Same data as the list &amp; inbox — one source of truth</li>
+        </ul>
+      </div>
+      <div class="f-media">
+        <div class="browser"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">127.0.0.1:8765</div></div><div class="body"><img src="assets/shot-board.jpg" alt="Kanban board with pipeline columns" loading="lazy" /></div></div>
+      </div>
+    </div>
+
+    <!-- feature 3 -->
+    <div class="feature reveal">
+      <div class="f-copy">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+        </div>
+        <h3>Every recruiter email, threaded to its job</h3>
+        <p>Sync your inbox and each application email becomes a card — grouped by opportunity, not by time. Upcoming interviews sit up top with the date, stage and interviewer. Every card deep-links back to the real thread.</p>
+        <ul class="f-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Upcoming interviews, with join links</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Comms grouped by opportunity</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Read-only — the agent proposes, you confirm</li>
+        </ul>
+      </div>
+      <div class="f-media">
+        <div class="browser"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">127.0.0.1:8765</div></div><div class="body"><img src="assets/shot-inbox.jpg" alt="Inbox — recruiter emails grouped by opportunity" loading="lazy" /></div></div>
+      </div>
+    </div>
+
+    <!-- feature 4 -->
+    <div class="feature rev reveal">
+      <div class="f-copy">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg>
+        </div>
+        <h3>Tailored CVs &amp; apply packets</h3>
+        <p>Open any role to a slide-over: status, fit rating, notes, and a CV &amp; Apply panel. Render a clean, ATS-safe CV from your master, let your agent reshape it to the posting, then build an apply packet — mapped fields plus drafted answers, ready for the browser.</p>
+        <ul class="f-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ATS-safe CV + cover letter (HTML / PDF / TXT)</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> AI-tailored to a specific job</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Apply packet: fields + answers, stops before submit</li>
+        </ul>
+      </div>
+      <div class="f-media">
+        <div class="browser"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">127.0.0.1:8765</div></div><div class="body"><img src="assets/shot-detail.jpg" alt="Job detail slide-over with CV and apply panel" loading="lazy" /></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE GRID -->
+<section class="soft-bg">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Why it's different</span>
+      <h2>Small, local, and yours.</h2>
+      <p>No SaaS, no lock-in, no telemetry. Just files you own and a toolkit that gets out of the way.</p>
+    </div>
+    <div class="grid">
+      <div class="card reveal">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></div>
+        <h4>Zero install</h4>
+        <p>Pure Python 3 standard library. No pip, no node, no build step. Clone and run.</p>
+      </div>
+      <div class="card reveal d1">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/></svg></div>
+        <h4>Agent-native</h4>
+        <p>Ships with an <span class="inline-code">AGENTS.md</span> playbook so Claude Code, Codex or Cursor knows exactly how to drive it.</p>
+      </div>
+      <div class="card reveal d2">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+        <h4>Local-first &amp; private</h4>
+        <p>Binds to 127.0.0.1 only. Your pipeline, profile and CVs are plain local files — nothing leaves your machine.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+        <h4>Zero-token ATS scan</h4>
+        <p>Pulls live openings straight from Greenhouse, Ashby, Lever, Workable, Recruitee &amp; SmartRecruiters — no LLM calls.</p>
+      </div>
+      <div class="card reveal d1">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+        <h4>Two UIs, one engine</h4>
+        <p>A polished web dashboard <em>and</em> a keyboard-driven terminal UI over the same NDJSON pipeline.</p>
+      </div>
+      <div class="card reveal d2">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h4>MIT licensed</h4>
+        <p>Free and open. Fork it, hack it, make it yours — the whole thing is a few readable Python files.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUICKSTART -->
+<section id="start">
+  <div class="wrap">
+    <div class="qs">
+      <div class="qs-copy reveal">
+        <span class="eyebrow">Quickstart</span>
+        <h2>Running in under a minute.</h2>
+        <p>Clone it and serve. It seeds a small demo dataset so the dashboard is alive immediately — then open the folder in your agent and say <b>“set me up”</b> to make it yours.</p>
+        <p>Prefer to do it by hand? <span class="inline-code">jobsdb.py setup</span> scaffolds your config from the examples. Run <span class="inline-code">doctor</span> any time to check things over.</p>
+        <div class="qs-req">
+          <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Python 3.9+</span>
+          <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Chrome (optional, for PDF)</span>
+          <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Your coding agent</span>
+        </div>
+      </div>
+      <div class="terminal reveal d1">
+        <div class="tbar"><i></i><i></i><i></i><span>huntbench — zsh</span></div>
+<pre><span class="c"># 1 · clone &amp; serve (demo data included)</span>
+<span class="p">$</span> git clone <span class="a">…/huntbench</span> &amp;&amp; cd huntbench
+<span class="p">$</span> python3 jobsdb.py serve
+  <span class="c">→ dashboard at http://127.0.0.1:8765</span>
+
+<span class="c"># 2 · open in your agent, then say "set me up"</span>
+<span class="c">#   it writes config/profile.yml + master-cv.md</span>
+
+<span class="c"># 3 · make it real</span>
+<span class="p">$</span> python3 jobsdb.py reset --yes  <span class="c"># clear demo</span>
+<span class="p">$</span> python3 jobsdb.py scan        <span class="c"># pull live jobs</span>
+<span class="p">$</span> python3 jobsdb.py serve       <span class="c"># triage them</span>
+</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-band">
+  <div class="wrap">
+    <div class="cta-card reveal">
+      <h2>Take command of your job hunt.</h2>
+      <p>Free, open source, and local. Clone it, point your agent at it, and run your search like a pro.</p>
+      <div class="cta-row">
+        <a class="btn btn-white" href="https://github.com/rachitkhurana/huntbench" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          View on GitHub
+        </a>
+        <a class="btn btn-outline" href="https://github.com/rachitkhurana/huntbench#quick-start" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="fbrand"><span class="mark" style="width:24px;height:24px;border-radius:7px;font-size:14px;display:grid;place-items:center;background:linear-gradient(155deg,#7d87e6,#5e6ad2);color:#fff;">h</span> Huntbench</div>
+    <div class="flinks">
+      <a href="https://github.com/rachitkhurana/huntbench" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/rachitkhurana/huntbench/blob/main/AGENTS.md" target="_blank" rel="noopener">Agent playbook</a>
+      <a href="https://github.com/rachitkhurana/huntbench/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+    </div>
+    <div class="fnote">Huntbench is an independent open-source project. Not affiliated with Linear, GitHub, or any ATS provider. Company names in screenshots are fictional demo data.</div>
+  </div>
+</footer>
+
+<script>
+  // nav shadow on scroll
+  const nav = document.getElementById('nav');
+  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
+  onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
+
+  // reveal on scroll
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // copy clone command
+  const copyBtn = document.getElementById('copyBtn');
+  const CLONE = 'git clone https://github.com/rachitkhurana/huntbench.git huntbench && cd huntbench && python3 jobsdb.py serve';
+  const checkIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  const copyIcon = copyBtn.innerHTML;
+  copyBtn.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(CLONE); } catch (e) {}
+    copyBtn.classList.add('copied'); copyBtn.innerHTML = checkIcon;
+    setTimeout(() => { copyBtn.classList.remove('copied'); copyBtn.innerHTML = copyIcon; }, 1600);
+  });
+</script>
+</body>
+</html>

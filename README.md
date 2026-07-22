@@ -1,6 +1,14 @@
+<div align="center">
+
 # Huntbench
 
 **Your job hunt, as mission control — driven by your own coding agent.**
+
+### [→ Visit the site](https://rachitkhurana.github.io/huntbench/)
+
+<a href="https://rachitkhurana.github.io/huntbench/"><img src="docs/assets/shot-list.jpg" alt="Huntbench dashboard — a status-grouped job pipeline with fit scores" width="820" /></a>
+
+</div>
 
 Huntbench is a tiny, dependency-free toolkit + local web dashboard for running a serious job
 search: discover roles, score them for fit, track your pipeline on a Linear-style board, generate
