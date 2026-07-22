@@ -10,7 +10,7 @@ Pure offline prep (NO browser, NO submit). It:
      apply-packet.md (human copy-paste fallback) into the job's output folder.
 
     ./jobsdb.py apply --id greenhouse:5778418004
-    ./jobsdb.py apply --id 4425858770 --no-tailor --slug pikky-fe
+    ./jobsdb.py apply --id 4425858770 --no-tailor --slug acme-frontend
 
 The actual form-filling is done by Claude in chat via the Claude-in-Chrome browser tools, which
 drive your real logged-in Chrome - see APPLY-RUNBOOK.md. This command never opens a browser and
@@ -115,10 +115,10 @@ def build_fields(profile, rec, region):
         "work_authorization": loc.get("visa_status") or "",
         "relocation": comp.get("location_flexibility") or "",
         "salary_expectation": band.get("target_range") or "",
-        "notice_period": "Immediate (currently on a career break)",
-        "years_experience": "~7",
-        "current_title": "Frontend Lead",
-        "current_company": "Ultrahuman",
+        "notice_period": cand.get("notice_period") or "",
+        "years_experience": cand.get("years_experience") or "",
+        "current_title": cand.get("current_title") or "",
+        "current_company": cand.get("current_company") or "",
     }
 
 

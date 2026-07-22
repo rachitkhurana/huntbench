@@ -461,11 +461,13 @@ def _cl_paragraphs(profile, rec):
     company = rec.get("company") or "your team"
     kws = jd_keywords(rec, 4)
     kw_phrase = ", ".join(kws[:3]) if kws else "modern frontend"
-    paras = ["I'm writing about the %s role at %s. I'm a designer-developer who ships 0 to 1 - "
-             "the rare engineer who owns scope, design, build and measurement - and %s is exactly "
-             "the kind of %s work I do best." % (role, company, company, kw_phrase)]
+    paras = ["I'm writing about the %s role at %s. I own products end to end - scope, design, "
+             "build, and measurement - and %s is exactly the kind of %s work I do best."
+             % (role, company, company, kw_phrase)]
     for p in (narr.get("proof_points") or [])[:2]:
-        paras.append("At Ultrahuman, %s" % (p.get("hero_metric") or ""))
+        m, n = (p.get("hero_metric") or ""), (p.get("name") or "")
+        if m:
+            paras.append(("%s: %s" % (n, m)) if n else m)
     if narr.get("exit_story"):
         paras.append(narr["exit_story"])
     paras.append("On logistics: %s I'd love to talk about how I can help %s."
