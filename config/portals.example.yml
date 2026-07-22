@@ -1,0 +1,492 @@
+# Portal scanner config for Huntbench — copy to config/portals.yml and tune to YOUR search.
+# `./jobsdb.py scan` pulls fresh openings from these companies' ATS boards (Greenhouse, Ashby,
+# Lever, Workable, Recruitee, SmartRecruiters) — zero API keys, just public JSON endpoints.
+# Edit title_filter / location_filter for your roles + geography, and grow tracked_companies
+# (your agent can "add <company> to portals.yml" for you). The starter list below leans
+# frontend/product-engineer — replace it with companies you care about.
+
+# -- Location filter --
+# Which locations to keep. Reorder / edit for your geography.
+# India is ALLOWED (not blocked) — it surfaces but isn't prioritized.
+location_filter:
+  # Checked BEFORE allow/block — rescues multi-location posts naming home region.
+  always_allow:
+    - "United Arab Emirates"
+    - "Abu Dhabi"
+    - "Dubai"
+    - "UAE"
+    - "Remote"
+  allow:
+    - "Remote"
+    - "United Arab Emirates"
+    - "UAE"
+    - "Dubai"
+    - "Abu Dhabi"
+    - "London"
+    - "United Kingdom"
+    - "Europe"
+    - "EU"
+    - "United States"
+    - "USA"
+    - "Australia"
+    - "India"
+    - "Bengaluru"
+    - "Bangalore"
+  # No block list — nothing is hard-rejected by location.
+
+# -- Title filter --
+# At least 1 positive must match AND 0 negatives (case-insensitive).
+title_filter:
+  positive:
+    - "Frontend"
+    - "Front End"
+    - "Front-End"
+    - "Fullstack"
+    - "Full Stack"
+    - "Full-Stack"
+    - "Frontend Lead"
+    - "Product Engineer"
+    - "Forward Deployed"
+    - "Deployed Engineer"
+    - "UI Engineer"
+    - "Web Engineer"
+    - "Web Developer"
+    - "React"
+    - "Next.js"
+    - "Software Engineer"
+    - "Software Developer"
+  negative:
+    - "Junior"
+    - "Intern"
+    - "Internship"
+    - "Graduate"
+    - ".NET"
+    - "Java "
+    - "PHP"
+    - "Ruby"
+    - "Embedded"
+    - "Firmware"
+    - "Blockchain"
+    - "Web3"
+    - "Crypto"
+    - "Salesforce Admin"
+    - "SAP "
+    - "Mainframe"
+    - "COBOL"
+    - "QA"
+    - "Backend"
+    - "Back End"
+  seniority_boost:
+    - "Senior"
+    - "Staff"
+    - "Principal"
+    - "Lead"
+    - "Head"
+    - "Tech Lead"
+
+# -- Search queries --
+# Each triggers a WebSearch. Tuned for frontend + UAE/remote.
+search_queries:
+  - name: Greenhouse — Senior/Lead Frontend (remote)
+    query: 'site:job-boards.greenhouse.io "Frontend Engineer" OR "Frontend Lead" OR "Product Engineer" Senior OR Lead remote'
+    enabled: true
+
+  - name: Ashby — Senior/Lead Frontend (remote)
+    query: 'site:jobs.ashbyhq.com "Frontend Engineer" OR "Frontend Lead" OR "Product Engineer" Senior OR Lead remote'
+    enabled: true
+
+  - name: Lever — Senior/Lead Frontend (remote)
+    query: 'site:jobs.lever.co "Frontend Engineer" OR "Frontend Lead" OR "Fullstack Engineer" Senior OR Lead remote'
+    enabled: true
+
+  - name: Forward Deployed Engineer (cross-portal)
+    query: '"Forward Deployed Engineer" OR "Deployed Engineer" frontend OR fullstack site:job-boards.greenhouse.io OR site:jobs.ashbyhq.com OR site:jobs.lever.co'
+    enabled: true
+
+  - name: UAE / Dubai — Frontend & Product Engineer
+    query: '"Frontend Engineer" OR "Frontend Lead" OR "Product Engineer" Dubai OR "Abu Dhabi" OR UAE'
+    enabled: true
+
+  - name: WeWorkRemotely — Frontend
+    query: 'site:weworkremotely.com "Frontend" OR "Full Stack" OR "Product Engineer" Senior OR Lead'
+    enabled: true
+
+  - name: YC / Work at a Startup — Frontend & Founding
+    query: 'site:workatastartup.com "Frontend Engineer" OR "Product Engineer" OR "Founding Engineer" remote'
+    enabled: true
+
+# -- Tracked companies --
+# AI-forward, frontend-heavy, remote-friendly, with verified direct ATS JSON
+# endpoints. Greenhouse boards expose JSON at the api: URL for fast scans.
+# NOTE: UAE-local employers (Careem, Tabby, Property Finder, Huspy, Bayzat) do
+# NOT expose public ATS JSON APIs — they stay in the websearch lane, not here.
+tracked_companies:
+
+  # ── Original starter set ────────────────────────────────────────────────
+  - name: Vercel
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/vercel
+    api: https://boards-api.greenhouse.io/v1/boards/vercel/jobs
+    notes: "Next.js / AI SDK / v0. Frontend AI tooling. Remote-friendly."
+    enabled: true
+
+  - name: Lovable
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/lovable
+    notes: "Stockholm SE. AI app builder (text-to-app). Heavy frontend."
+    enabled: true
+
+  - name: Supabase
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/supabase
+    notes: "Open-source Firebase alternative. Remote-first."
+    enabled: true
+
+  - name: Resend
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/resend
+    notes: "Email API for developers. Remote-first, DX-focused."
+    enabled: true
+
+  - name: Clerk
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/clerk
+    notes: "Auth & user management for developers. React-heavy."
+    enabled: true
+
+  - name: Attio
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/attio
+    notes: "Remote EU. AI-native CRM. Strong frontend craft."
+    enabled: true
+
+  - name: Synthesia
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/synthesia
+    notes: "London UK. AI video generation for enterprise."
+    enabled: true
+
+  - name: Spotify
+    provider: lever
+    careers_url: https://jobs.lever.co/spotify
+    notes: "Stockholm / London / NYC. Large frontend + design-systems org."
+    enabled: true
+
+  # ── AI labs / model & agent companies ───────────────────────────────────
+  - name: OpenAI
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/openai
+    notes: "Frontier AI lab. Large product-eng surface (ChatGPT, API)."
+    enabled: true
+
+  - name: Anthropic
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/anthropic
+    api: https://boards-api.greenhouse.io/v1/boards/anthropic/jobs
+    notes: "Claude. AI safety lab. Strong product-eng + frontend hiring."
+    enabled: true
+
+  - name: Sierra
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/sierra
+    notes: "Conversational AI agents for business. Bret Taylor."
+    enabled: true
+
+  - name: Scale AI
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/scaleai
+    api: https://boards-api.greenhouse.io/v1/boards/scaleai/jobs
+    notes: "Data platform for AI. Large eng org."
+    enabled: true
+
+  - name: Cursor (Anysphere)
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/cursor
+    notes: "AI code editor. Heavy frontend / editor craft."
+    enabled: true
+
+  - name: Decagon
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/decagon
+    notes: "AI customer-support agents. Fast-growing."
+    enabled: true
+
+  - name: Perplexity
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/perplexity
+    notes: "AI answer engine. Strong web/product frontend."
+    enabled: true
+
+  - name: Baseten
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/baseten
+    notes: "ML model deployment / inference infra."
+    enabled: true
+
+  - name: Cognition
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/cognition
+    notes: "Devin AI software engineer. Windsurf."
+    enabled: true
+
+  - name: Suno
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/suno
+    notes: "AI music generation. Consumer product frontend."
+    enabled: true
+
+  - name: ElevenLabs
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/elevenlabs
+    notes: "AI voice / audio. Remote-friendly, global."
+    enabled: true
+
+  - name: Gamma
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/gamma
+    notes: "AI presentations / docs. Design-forward frontend."
+    enabled: true
+
+  - name: Modal
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/modal
+    notes: "Serverless compute for AI/data. DX-focused."
+    enabled: true
+
+  - name: Rain
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/rain
+    notes: "MENA (Bahrain/UAE) crypto exchange. Crypto-titled roles filtered out."
+    enabled: true
+
+  - name: Browserbase
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/browserbase
+    notes: "Headless browser infra for AI agents."
+    enabled: true
+
+  - name: Pika
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/pika
+    notes: "AI video generation. Small, product-heavy."
+    enabled: true
+
+  - name: Vapi
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/vapi
+    notes: "Voice AI developer platform."
+    enabled: true
+
+  # ── Dev tools / infrastructure ──────────────────────────────────────────
+  - name: Replit
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/replit
+    notes: "Browser IDE + AI agent. Heavy frontend."
+    enabled: true
+
+  - name: Cloudflare
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/cloudflare
+    api: https://boards-api.greenhouse.io/v1/boards/cloudflare/jobs
+    notes: "Edge platform / Workers. Global, remote-friendly."
+    enabled: true
+
+  - name: GitLab
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/gitlab
+    api: https://boards-api.greenhouse.io/v1/boards/gitlab/jobs
+    notes: "All-remote DevOps platform."
+    enabled: true
+
+  - name: Linear
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/linear
+    notes: "Issue tracking. Best-in-class frontend / design craft."
+    enabled: true
+
+  - name: Twilio
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/twilio
+    api: https://boards-api.greenhouse.io/v1/boards/twilio/jobs
+    notes: "Comms APIs. Large distributed eng org."
+    enabled: true
+
+  - name: Temporal
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/temporal
+    notes: "Durable execution / workflow engine. Remote-first."
+    enabled: true
+
+  - name: Webflow
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/webflow
+    api: https://boards-api.greenhouse.io/v1/boards/webflow/jobs
+    notes: "Visual web builder. Frontend-heavy product."
+    enabled: true
+
+  - name: Mintlify
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/mintlify
+    notes: "AI-native docs platform. React-heavy."
+    enabled: true
+
+  - name: Sourcegraph
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/sourcegraph91
+    api: https://boards-api.greenhouse.io/v1/boards/sourcegraph91/jobs
+    notes: "Code search + Cody AI. All-remote."
+    enabled: true
+
+  - name: Railway
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/railway
+    notes: "Deployment infra / PaaS. Small, product-focused."
+    enabled: true
+
+  - name: Warp
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/warp
+    api: https://boards-api.greenhouse.io/v1/boards/warp/jobs
+    notes: "AI terminal. Rust + heavy UI craft."
+    enabled: true
+
+  - name: Ramp
+    provider: ashby
+    careers_url: https://jobs.ashbyhq.com/ramp
+    notes: "Spend management fintech. Strong frontend org."
+    enabled: true
+
+  # ── Big product / consumer ──────────────────────────────────────────────
+  - name: Databricks
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/databricks
+    api: https://boards-api.greenhouse.io/v1/boards/databricks/jobs
+    notes: "Data + AI platform. Very large eng org (huge board)."
+    enabled: true
+
+  - name: Stripe
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/stripe
+    api: https://boards-api.greenhouse.io/v1/boards/stripe/jobs
+    notes: "Payments. Renowned frontend / design-systems work."
+    enabled: true
+
+  - name: Pinterest
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/pinterest
+    api: https://boards-api.greenhouse.io/v1/boards/pinterest/jobs
+    notes: "Visual discovery. Large web frontend."
+    enabled: true
+
+  - name: Figma
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/figma
+    api: https://boards-api.greenhouse.io/v1/boards/figma/jobs
+    notes: "Design tool. Elite frontend / canvas / WebGL eng."
+    enabled: true
+
+  - name: Airbnb
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/airbnb
+    api: https://boards-api.greenhouse.io/v1/boards/airbnb/jobs
+    notes: "Design-driven consumer product. Large frontend."
+    enabled: true
+
+  - name: Samsara
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/samsara
+    api: https://boards-api.greenhouse.io/v1/boards/samsara/jobs
+    notes: "IoT / connected operations. Large eng org."
+    enabled: true
+
+  - name: Reddit
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/reddit
+    api: https://boards-api.greenhouse.io/v1/boards/reddit/jobs
+    notes: "Social platform. Remote-friendly, large frontend."
+    enabled: true
+
+  - name: Instacart
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/instacart
+    api: https://boards-api.greenhouse.io/v1/boards/instacart/jobs
+    notes: "Grocery delivery. Large product-eng org."
+    enabled: true
+
+  - name: Discord
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/discord
+    api: https://boards-api.greenhouse.io/v1/boards/discord/jobs
+    notes: "Chat platform. React / Electron frontend."
+    enabled: true
+
+  - name: Gusto
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/gusto
+    api: https://boards-api.greenhouse.io/v1/boards/gusto/jobs
+    notes: "Payroll / HR platform. Strong frontend."
+    enabled: true
+
+  - name: Dropbox
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/dropbox
+    api: https://boards-api.greenhouse.io/v1/boards/dropbox/jobs
+    notes: "Virtual-first / remote. Product frontend."
+    enabled: true
+
+  - name: Airtable
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/airtable
+    api: https://boards-api.greenhouse.io/v1/boards/airtable/jobs
+    notes: "No-code database. Heavy interactive frontend."
+    enabled: true
+
+  - name: Squarespace
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/squarespace
+    api: https://boards-api.greenhouse.io/v1/boards/squarespace/jobs
+    notes: "Website builder. Frontend-heavy product."
+    enabled: true
+
+  # ── Fintech / EU / other ────────────────────────────────────────────────
+  - name: Palantir
+    provider: lever
+    careers_url: https://jobs.lever.co/palantir
+    notes: "Deployment-heavy data platform. Forward-Deployed Engineer roles."
+    enabled: true
+
+  - name: Robinhood
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/robinhood
+    api: https://boards-api.greenhouse.io/v1/boards/robinhood/jobs
+    notes: "Consumer fintech / trading. Large frontend."
+    enabled: true
+
+  - name: Brex
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/brex
+    api: https://boards-api.greenhouse.io/v1/boards/brex/jobs
+    notes: "Corporate cards / spend fintech."
+    enabled: true
+
+  - name: Monzo
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/monzo
+    api: https://boards-api.greenhouse.io/v1/boards/monzo/jobs
+    notes: "UK neobank. London, some remote."
+    enabled: true
+
+  - name: N26
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/n26
+    api: https://boards-api.greenhouse.io/v1/boards/n26/jobs
+    notes: "EU neobank (Berlin). European frontend roles."
+    enabled: true
+
+  # ── MENA (directly scannable) ───────────────────────────────────────────
+  - name: Tamara
+    provider: greenhouse
+    careers_url: https://job-boards.greenhouse.io/tamara
+    api: https://boards-api.greenhouse.io/v1/boards/tamara/jobs
+    notes: "BNPL fintech, Riyadh/Dubai. MENA region — priority geography."
+    enabled: true

@@ -1,0 +1,17 @@
+# Your data + private config stay local (only the *.example.* files are tracked)
+jobs.ndjson
+output/
+overview.md
+pipeline.md
+shortlist.md
+.sync-request.json
+config/profile.yml
+config/portals.yml
+config/master-cv.md
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store

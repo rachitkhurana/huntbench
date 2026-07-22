@@ -1,0 +1,62 @@
+# Huntbench profile — copy this to config/profile.yml and edit (or run ./jobsdb.py setup).
+# Your agent can fill this in for you: open the repo in Claude Code / Codex / Cursor and say
+# "set me up" — it will interview you and write config/profile.yml + config/master-cv.md.
+
+candidate:
+  full_name: "Jane Doe"
+  email: "jane@example.com"
+  phone:
+    - "+1 555 010 0000"      # first entry is used as primary on forms
+  location: "Berlin, Germany"
+  linkedin: "linkedin.com/in/janedoe"    # no scheme needed
+  portfolio_url: "https://janedoe.dev"
+  github: "github.com/janedoe"
+  twitter: ""
+
+# What you're optimizing for — used to score fit and tailor CVs.
+target_roles:
+  primary:
+    - "Senior Frontend Engineer"
+    - "Frontend Lead"
+    - "Product Engineer"
+    - "Full-Stack Engineer"
+  archetypes:
+    - name: "Frontend Product Engineer"
+      level: "Senior/Staff/Lead"
+      fit: "primary"
+
+# Free-text used when drafting cover letters / application answers.
+narrative:
+  headline: "Senior Frontend Engineer — 6 yrs shipping React/TypeScript products end to end."
+  exit_story: "Looking for a product-focused frontend/full-stack role at a team that ships fast."
+  tagline: ""
+  superpowers:
+    - "Owns features end to end: scope -> design -> build -> measure."
+    - "Design-systems + performance (Core Web Vitals) at scale."
+  # Real, verifiable projects/impact (NON-private only). Mark private ones [STEALTH] in the CV.
+  proof_points:
+    - name: "acme.com storefront"
+      url: "https://example.com"
+      hero_metric: "Rebuilt the storefront (Next.js); cut LCP 40%, powered ~$10M/yr."
+
+# Per-region compensation bands — scored against a role's region.
+compensation:
+  current_baseline: "internal reference — do not volunteer"
+  by_region:
+    uae:
+      target_range: "AED 30,000-40,000 / month"
+      minimum: "AED 28,000 / month"
+    london_eu:
+      target_range: "EUR 80,000-110,000 / year"
+      minimum: "EUR 70,000 / year"
+    us:
+      target_range: "USD 150,000-200,000 / year base"
+      minimum: "USD 140,000 / year"
+  location_flexibility: "Open to remote; relocation for the right role."
+
+location:
+  country: "Germany"
+  city: "Berlin"
+  timezone: "CET (UTC+1)"
+  visa_status: "EU work authorization; would need sponsorship for US/UK."
+  onsite_availability: "Berlin on-site easy; remote welcome; relocation possible."
