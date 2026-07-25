@@ -129,6 +129,12 @@ def _get(sec, kw):
     return ""
 
 
+def _detag(s):
+    """Parsed fields are HTML-context strings (tags + entities). Back to plain text for
+    the .txt CV / cover letter - stripping tags alone left "&amp;" in the ATS-facing copy."""
+    return html.unescape(re.sub(r"<[^>]+>", "", s or ""))
+
+
 def _bullets(body):
     return [b.strip() for b in re.findall(r"^\s*-\s+(.+)$", body, flags=re.M)]
 
@@ -200,8 +206,10 @@ def _parse_edu(s):
 
 
 def _subtitle(sec):
+    # Raw, like every other parsed field: each builder _clean()s it for its own context.
+    # Cleaning here too double-escaped "&" into "&amp;amp;" in HTML and "&amp;" in the txt CV.
     m = re.search(r"\*\*(.+?)\*\*", sec.get("_preamble", ""))
-    return _clean(m.group(1)) if m else "Frontend Lead"
+    return m.group(1) if m else "Frontend Lead"
 
 
 def parse_master():
@@ -288,6 +296,8 @@ _CV_CSS = """
 *{margin:0;padding:0;box-sizing:border-box;}
 html{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:10.5px;line-height:1.5;color:#222;}
+/* on-screen only (cv.html in a browser, the web preview) - print uses the @page margin */
+@media screen{body{padding:15mm;}}
 a{color:#2b7a78;text-decoration:underline;}
 .name{font-size:30px;font-weight:700;color:#111;letter-spacing:-0.4px;line-height:1.05;}
 .subtitle{font-size:12px;color:#555;margin-top:3px;}
@@ -320,6 +330,72 @@ td.val{color:#333;}
 .edu-org{color:#777;font-size:9.5px;}
 .hon{font-size:10px;color:#2a2a2a;margin-bottom:4px;line-height:1.45;}
 """
+
+# ---- templates ---------------------------------------------------------------
+# A template is just CSS layered over the same semantic markup build_cv() emits
+# (.name/.subtitle/.contact/.section/.sec-head/.job/.prod/.edu/...). Adding one = adding
+# a string here; nothing else changes, and every template stays ATS-safe because the
+# document structure is identical.
+
+_TPL_COMPACT = """
+body{font-size:9.8px;line-height:1.42;}
+.name{font-size:23px;}
+.subtitle{font-size:10.5px;}
+.section{margin-top:10px;}
+.sec-head{letter-spacing:1.4px;padding-bottom:3px;margin-bottom:6px;}
+.job{margin-bottom:7px;}
+.job li{font-size:9.6px;line-height:1.42;margin-bottom:1.5px;}
+.job-title{font-size:10.6px;}
+.prod{margin-bottom:4px;font-size:9.6px;}
+table.skills td{padding:1.5px 0;font-size:9.6px;}
+.cols{margin-top:10px;}
+"""
+
+_TPL_MODERN = """
+body{font-family:Georgia,'Times New Roman',serif;color:#1f2328;}
+a{color:#3b5bdb;}
+.name{font-size:29px;font-weight:400;letter-spacing:-0.2px;}
+.subtitle{font-size:11.5px;color:#3b5bdb;font-style:italic;margin-top:5px;}
+.contact a{color:#3b5bdb;}
+.sec-head{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#3b5bdb;
+  border-bottom:none;border-left:2.5px solid #3b5bdb;padding:0 0 0 8px;letter-spacing:1.6px;}
+.job-title{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;}
+td.cat{color:#3b5bdb;}
+"""
+
+_TPL_MONO = """
+body{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:9.6px;color:#1a1a1a;}
+a{color:#1a1a1a;}
+.name{font-size:21px;font-weight:700;letter-spacing:-0.5px;text-transform:uppercase;}
+.subtitle{font-size:10px;color:#666;}
+.contact{font-size:9px;}
+.sec-head{border-bottom:1.5px solid #1a1a1a;letter-spacing:2.5px;font-size:9px;}
+.job-title{font-size:10.4px;}
+.job li{font-size:9.4px;}
+.job ul{padding-left:13px;}
+.job li::marker{content:"– ";}
+table.skills td{font-size:9.4px;}
+"""
+
+# label shown in the UI -> extra CSS appended after the base sheet
+CV_TEMPLATES = {
+    "classic": ("Classic", ""),
+    "compact": ("Compact", _TPL_COMPACT),
+    "modern": ("Modern", _TPL_MODERN),
+    "mono": ("Mono", _TPL_MONO),
+}
+
+# The picked template lives in one file so the web preview and `jobsdb cv` never disagree.
+TEMPLATE_PATH = os.path.join(MODULE_DIR, "config", "cv-template.txt")
+
+
+def default_template():
+    try:
+        with open(TEMPLATE_PATH, encoding="utf-8") as f:
+            t = f.read().strip()
+    except OSError:
+        return "classic"
+    return t if t in CV_TEMPLATES else "classic"
 
 
 # ---- builders ----------------------------------------------------------------
@@ -381,7 +457,7 @@ def _edu_html(items):
     return out
 
 
-def build_cv(profile, rec, master, region):
+def build_cv(profile, rec, master, region, template="classic"):
     cand = profile.get("candidate") or {}
     pagesize = _PAGESIZE.get(region, "A4")
     edu = _edu_html(master.get("education") or [])
@@ -412,6 +488,7 @@ def build_cv(profile, rec, master, region):
     )
     head = ("<!doctype html><html><head><meta charset=\"utf-8\"><style>"
             + ("@page{size:%s;margin:15mm;}" % pagesize) + _CV_CSS
+            + CV_TEMPLATES.get(template, CV_TEMPLATES["classic"])[1]
             + "</style></head><body>")
     return head + body + "</body></html>"
 
@@ -434,15 +511,14 @@ def build_cv_txt(profile, rec, master):
         L.append("")
     L.append("INDEPENDENT PRODUCT WORK")
     for p in (master.get("projects") or [])[:6]:
-        nm, de, te = (re.sub(r"<[^>]+>", "", p[k]) for k in ("name", "desc", "tech"))
+        nm, de, te = (_detag(p[k]) for k in ("name", "desc", "tech"))
         L.append(_wrap("- %s: %s%s" % (nm, de, (" (%s)" % te) if te else ""), sub="  "))
     L += ["", "SKILLS"]
     for c in master.get("skills") or []:
-        L.append(_wrap("%s: %s" % (re.sub(r"<[^>]+>", "", c["cat"]),
-                                   re.sub(r"<[^>]+>", "", c["items"])), sub="  "))
+        L.append(_wrap("%s: %s" % (_detag(c["cat"]), _detag(c["items"])), sub="  "))
     L += ["", "EDUCATION"]
     for title, org, year in master.get("education") or []:
-        L.append("%s (%s) - %s" % (re.sub(r"<[^>]+>", "", title), year, re.sub(r"<[^>]+>", "", org)))
+        L.append("%s (%s) - %s" % (_detag(title), year, _detag(org)))
     if master.get("honours"):
         L += ["", "HONOURS"] + [_clean(h, False) for h in master["honours"]]
     return "\n".join(L) + "\n"
@@ -505,7 +581,7 @@ def build_cover_letter_txt(profile, rec):
                                 cand.get("location"), cand.get("portfolio_url")] if x), "",
          "Dear %s team," % _clean(rec.get("company") or "your", False), ""]
     for p in _cl_paragraphs(profile, rec):
-        L += [_wrap(re.sub(r"<[^>]+>", "", p)), ""]
+        L += [_wrap(_detag(p)), ""]
     L += ["Warmly,", _clean(cand.get("full_name"), False)]
     return "\n".join(L) + "\n"
 
@@ -607,7 +683,8 @@ def run(args):
     elif overlay:
         master = _merge_overlay(master, overlay)
 
-    cv_html = build_cv(prof, rec, master, region)
+    cv_html = build_cv(prof, rec, master, region,
+                       getattr(args, "template", None) or default_template())
     cv_txt = build_cv_txt(prof, rec, master)
     cl_html = "" if args.no_letter else build_cover_letter(prof, rec, master)
     cl_txt = "" if args.no_letter else build_cover_letter_txt(prof, rec)

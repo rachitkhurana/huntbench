@@ -8,6 +8,7 @@ shortlist.md
 config/profile.yml
 config/portals.yml
 config/master-cv.md
+config/cv-template.txt
 
 # Python
 __pycache__/
@@ -15,3 +16,4 @@ __pycache__/
 
 # OS
 .DS_Store
+.gstack/
