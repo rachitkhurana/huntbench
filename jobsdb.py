@@ -296,13 +296,29 @@ def index_by_id(records):
     return {r["id"]: r for r in records if r.get("id")}
 
 
-def merge_record(old, new):
-    """Merge new into old: new non-empty scalar fields win; keep created; bump updated."""
+# Fields owned by the user / workflow. On a re-scan (or add / bulk-add) these must
+# not be clobbered by incoming posting data — otherwise scanning would reset an
+# 'applied' job back to 'new', wipe a fit rating, notes, or the activity log.
+USER_STATE_FIELDS = frozenset({
+    "status", "fit_score", "fit_reason", "notes", "activity",
+    "promoted_to", "enriched", "enrichment", "date_found",
+})
+
+
+def merge_record(old, new, preserve_user_state=False):
+    """Merge new into old: new non-empty scalar fields win; keep created; bump updated.
+
+    When preserve_user_state is set (scan / add / bulk-add via upsert), incoming
+    posting data refreshes objective fields (title, location, salary, url, …) but
+    never overwrites USER_STATE_FIELDS that old already holds — so a re-scan can't
+    reset status/fit/notes/activity. dedupe keeps the default (new wins)."""
     merged = dict(old)
     for k, v in new.items():
         if k in ("created",):
             continue
         if v in ("", None, [], {}):
+            continue
+        if preserve_user_state and k in USER_STATE_FIELDS and old.get(k) not in ("", None, [], {}):
             continue
         merged[k] = v
     # union tags
@@ -322,7 +338,7 @@ def upsert(records, incoming):
             sys.stderr.write("warning: record without id skipped\n")
             continue
         if rec["id"] in idx:
-            merged = merge_record(idx[rec["id"]], rec)
+            merged = merge_record(idx[rec["id"]], rec, preserve_user_state=True)
             idx[rec["id"]].clear()
             idx[rec["id"]].update(merged)
             updated += 1
