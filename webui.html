@@ -133,6 +133,17 @@
 
   /* ---------- inbox ---------- */
   .inbox{padding:18px 24px;max-width:1520px}
+  .cvwrap{padding:18px 24px;max-width:960px}
+  .cvwrap textarea{min-height:calc(100vh - 210px)}
+  .cvbar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .cvhint{font-size:11.5px;color:var(--text3);line-height:1.5}
+  .seg{display:flex;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+  .seg button{border:0;background:transparent;font:12px var(--font);color:var(--text2);
+    padding:5px 12px;cursor:pointer;transition:background .12s,color .12s}
+  .seg button:hover{background:var(--hover)}
+  .seg button.on{background:var(--accent);color:#fff}
+  .cvpaper{width:100%;min-height:60vh;border:1px solid var(--border);border-radius:var(--r);
+    background:#fff;box-shadow:var(--sh-lg);display:block}
   .isummary{color:var(--text3);font-size:12.5px;margin:-2px 0 18px}
   .isummary b{color:var(--text2);font-weight:600}
   .ihead{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);font-weight:600;margin:20px 0 12px}
@@ -303,6 +314,7 @@
   <div class="navitem" data-view="list"><span class="ic" id="ic-list"></span><span>All jobs</span><span class="badge" id="nb-list"></span></div>
   <div class="navitem" data-view="board"><span class="ic" id="ic-board"></span><span>Board</span></div>
   <div class="navitem" data-view="inbox"><span class="ic" id="ic-inbox"></span><span>Inbox</span><span class="badge" id="nb-inbox"></span></div>
+  <div class="navitem" data-view="profile"><span class="ic" id="ic-profile"></span><span>Profile</span></div>
 
   <div class="seclabel" data-sec="region"><span class="chev">▾</span> Region</div>
   <div class="chips" id="regionChips" data-sec="region"></div>
@@ -358,7 +370,9 @@ const $=s=>document.querySelector(s);
 const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e};
 const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
 const cap=s=>(s||"").charAt(0).toUpperCase()+(s||"").slice(1);
-async function api(u,o){const r=await fetch(u,o);if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||r.status);return r.json();}
+async function api(u,o){const r=await fetch(u,o);if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||r.status);
+  if(o&&o.method==="POST")REV=null;   // our own write: re-baseline instead of self-refreshing
+  return r.json();}
 
 function statusIcon(s,size){
   size=size||14; const col=SCOLOR[s]||"#9ca3af", frac=PROG[s]||0, r=5, c=2*Math.PI*r, dashed=(s==="new"||s==="skip");
@@ -371,7 +385,8 @@ function fitStyle(f){const c=FITC[f]||"#9ca3af";return `color:${c};background:${
 function icon(name){const p={
   list:'<path d="M2 4h12M2 8h12M2 12h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
   board:'<rect x="2" y="2.5" width="4" height="11" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="10" y="2.5" width="4" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/>',
-  inbox:'<path d="M2 3.5h12v9H2z" stroke="currentColor" stroke-width="1.3"/><path d="M2 9h3l1 2h4l1-2h3" stroke="currentColor" stroke-width="1.3" fill="none"/>'
+  inbox:'<path d="M2 3.5h12v9H2z" stroke="currentColor" stroke-width="1.3"/><path d="M2 9h3l1 2h4l1-2h3" stroke="currentColor" stroke-width="1.3" fill="none"/>',
+  profile:'<circle cx="8" cy="5.5" r="2.6" stroke="currentColor" stroke-width="1.3"/><path d="M3 13.5c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>'
   }[name];return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">${p}</svg>`;}
 
 // ---------- init ----------
@@ -382,6 +397,7 @@ async function init(){
 }
 async function bootDashboard(){
   $("#ic-list").innerHTML=icon("list"); $("#ic-board").innerHTML=icon("board"); $("#ic-inbox").innerHTML=icon("inbox");
+  $("#ic-profile").innerHTML=icon("profile");
   META=await api("/api/meta");
   $("#sort").innerHTML=META.sorts.map(s=>`<option value="${s}">sort: ${s}</option>`).join("");
   buildChips(); buildStats(); syncBadges();
@@ -393,8 +409,24 @@ async function bootDashboard(){
   document.querySelectorAll(".seclabel").forEach(l=>l.onclick=()=>toggleSec(l.dataset.sec));
   $("#panelClose").onclick=closePanel; $("#backdrop").onclick=closePanel;
   $("#cmdtrigger").onclick=openCmdk;
-  wireCmdk(); wireKeys();
+  wireCmdk(); wireKeys(); watchDb();
   setView(STATE.view);
+}
+
+// ---------- live reload on DB change ----------
+// Poll a cheap mtime+size token; when a tool (scan/apply/inbox sync) rewrites jobs.ndjson,
+// pull the new data in place. Skipped while typing or mid-drag so we never clobber input.
+let REV=null;
+function watchDb(){
+  setInterval(async()=>{
+    if(document.hidden||DRAG||/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||""))return;
+    const rev=(await api("/api/rev").catch(()=>null))?.rev; if(!rev)return;
+    if(REV===null){REV=rev;return;}
+    if(rev===REV)return;
+    REV=rev;
+    await refreshMeta(); await refreshView();
+    if(drawerId)openDetail(drawerId);
+  },3000);
 }
 
 // ---------- onboarding ----------
@@ -565,12 +597,79 @@ function syncBadges(){$("#nb-list").textContent=META.total; $("#nb-inbox").textC
 function setView(v){
   STATE.view=v; localStorage.setItem("v2view",v);
   document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("on",n.dataset.view===v));
-  $("#vtitle").textContent=v==="list"?"All jobs":v==="board"?"Board":"Inbox";
+  $("#vtitle").textContent={list:"All jobs",board:"Board",inbox:"Inbox",profile:"Profile"}[v];
   document.querySelectorAll('.seclabel[data-sec="status"],.chips[data-sec="status"]').forEach(e=>e.style.display=(v==="list")?"":"none");
-  $("#sort").style.display=(v==="inbox")?"none":"";
+  $("#sort").style.display=(v==="inbox"||v==="profile")?"none":"";
+  $("#q").style.display=(v==="profile")?"none":"";
   refreshView();
 }
-function refreshView(){STATE.cursor=-1; return STATE.view==="board"?loadBoard():STATE.view==="inbox"?loadInbox():loadList();}
+function refreshView(){STATE.cursor=-1; return STATE.view==="board"?loadBoard():STATE.view==="inbox"?loadInbox():STATE.view==="profile"?loadProfile():loadList();}
+
+// ---------- profile (master CV: rendered preview + markdown editor) ----------
+let CVMODE="preview", CVTPL=null;
+async function loadProfile(){
+  const t=await api("/api/cv-templates").catch(()=>({templates:[],current:"classic"}));
+  if(!CVTPL)CVTPL=t.current;
+  $("#vcount").textContent="config/master-cv.md";
+  const c=$("#content"); c.innerHTML="";
+  const w=el("div","cvwrap",
+    `<div class="cvbar">`+
+      `<div class="seg"><button data-m="preview">Preview</button><button data-m="edit">Edit</button></div>`+
+      `<select id="cv-tpl" class="tbtn" title="CV template">`+
+        t.templates.map(x=>`<option value="${esc(x.id)}"${x.id===CVTPL?" selected":""}>${esc(x.label)}</option>`).join("")+
+      `</select>`+
+      `<button class="tbtn" id="cv-pdf">↓ PDF</button>`+
+      `<span class="sp" style="flex:1"></span>`+
+      `<span class="cvhint" id="cv-hint"></span>`+
+      `<button class="ob-btn" id="cv-save" style="display:none">Save</button>`+
+    `</div><div id="cv-body"></div>`);
+  c.appendChild(w);
+  w.querySelectorAll(".seg button").forEach(b=>{
+    b.classList.toggle("on",b.dataset.m===CVMODE);
+    b.onclick=()=>{CVMODE=b.dataset.m;loadProfile();};
+  });
+  // Picking a template persists it, so `jobsdb cv` generates what the preview shows.
+  $("#cv-tpl").onchange=async e=>{
+    CVTPL=e.target.value;
+    await api("/api/cv-template",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({template:CVTPL})}).catch(()=>{});
+    if(CVMODE==="preview"){$("#cv-body").innerHTML="";cvPreview();}
+  };
+  $("#cv-pdf").onclick=cvPdf;
+  return CVMODE==="edit"?cvEdit():cvPreview();
+}
+function cvPreview(){
+  $("#cv-hint").textContent="rendered exactly as the generated PDF";
+  const f=el("iframe","cvpaper"); f.src="/api/cv-preview?template="+encodeURIComponent(CVTPL)+"&t="+Date.now();
+  f.onload=()=>{try{f.style.height=(f.contentDocument.body.scrollHeight+64)+"px";}catch(e){}};
+  $("#cv-body").appendChild(f);
+}
+async function cvPdf(){
+  const b=$("#cv-pdf"); b.disabled=true; b.textContent="rendering…";
+  try{
+    const r=await fetch("/api/cv-pdf?template="+encodeURIComponent(CVTPL));
+    if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||r.status);
+    const url=URL.createObjectURL(await r.blob());
+    const a=el("a"); a.href=url; a.download="cv.pdf"; a.click(); URL.revokeObjectURL(url);
+    toast("ok","PDF downloaded");
+  }catch(e){toast("err","PDF failed",e.message);}
+  b.disabled=false; b.textContent="↓ PDF";
+}
+async function cvEdit(){
+  const d=await api("/api/setup/master-cv").catch(()=>({markdown:""}));
+  $("#cv-hint").innerHTML=`⌘S to save · keep the <span class="ob-code">## Section</span> headers`;
+  $("#cv-body").innerHTML=`<div class="ob-field"><textarea id="cv-ta" spellcheck="false"></textarea></div>`;
+  const ta=$("#cv-ta"); ta.value=d.markdown||"";
+  const btn=$("#cv-save"); btn.style.display="";
+  const save=async()=>{
+    try{await api("/api/setup/master-cv",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({markdown:ta.value})});
+      toast("ok","CV saved","config/master-cv.md"); CVMODE="preview"; loadProfile();
+    }catch(e){toast("err","Couldn't save",e.message);}
+  };
+  btn.onclick=save;
+  ta.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="s"){e.preventDefault();save();}});
+}
 
 // ---------- list (grouped by status) ----------
 async function loadList(){

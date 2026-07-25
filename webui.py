@@ -207,6 +207,15 @@ def activity_payload(kind=None, limit=300):
 CONFIG_DIR = os.path.join(HERE, "config")
 
 
+def _cv_html(q):
+    """Render the master CV with the requested (or saved) template - same builder as the PDF."""
+    import configlib
+    prof, _ = configlib.load_profile()
+    tpl = (q.get("template") or [""])[0] or cvgen.default_template()
+    return cvgen.build_cv(prof, None, cvgen.parse_master(),
+                          (q.get("region") or ["other"])[0], tpl)
+
+
 def status_payload():
     import configlib
     has_profile = os.path.exists(os.path.join(CONFIG_DIR, "profile.yml"))
@@ -368,10 +377,32 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, status_payload())
             if path == "/api/setup/starter-companies":
                 return self._send(200, {"companies": STARTER_COMPANIES})
+            if path == "/api/cv-templates":
+                return self._send(200, {
+                    "templates": [{"id": k, "label": v[0]} for k, v in cvgen.CV_TEMPLATES.items()],
+                    "current": cvgen.default_template()})
+            if path == "/api/cv-preview":
+                # The real thing: same builder the PDF uses, so what you see here is the CV.
+                return self._send(200, _cv_html(q), "text/html; charset=utf-8")
+            if path == "/api/cv-pdf":
+                return self._cv_pdf(q)
+            if path == "/api/setup/master-cv":
+                p = os.path.join(CONFIG_DIR, "master-cv.md")
+                if not os.path.exists(p):
+                    p = os.path.join(CONFIG_DIR, "master-cv.example.md")
+                md = open(p, encoding="utf-8").read() if os.path.exists(p) else ""
+                return self._send(200, {"markdown": md})
             if path == "/api/setup/cv-template":
                 ex = os.path.join(CONFIG_DIR, "master-cv.example.md")
                 tpl = open(ex, encoding="utf-8").read() if os.path.exists(ex) else ""
                 return self._send(200, {"template": tpl})
+            if path == "/api/rev":
+                # cheap change-token: clients poll this and reload when it moves.
+                try:
+                    st = os.stat(jobsdb.DB_PATH)
+                    return self._send(200, {"rev": "%d-%d" % (st.st_mtime_ns, st.st_size)})
+                except OSError:
+                    return self._send(200, {"rev": "none"})
             if path == "/api/meta":
                 return self._send(200, meta_payload())
             if path == "/api/interviews":
@@ -466,6 +497,13 @@ class Handler(BaseHTTPRequestHandler):
                 with open(os.path.join(CONFIG_DIR, "master-cv.md"), "w", encoding="utf-8") as f:
                     f.write(md)
                 return self._send(200, status_payload())
+            if path == "/api/cv-template":
+                t = (self._json_body() or {}).get("template")
+                if t not in cvgen.CV_TEMPLATES:
+                    return self._send(400, {"error": "unknown template"})
+                with open(cvgen.TEMPLATE_PATH, "w", encoding="utf-8") as f:
+                    f.write(t + "\n")
+                return self._send(200, {"current": t})
             if path == "/api/setup/portals":
                 os.makedirs(CONFIG_DIR, exist_ok=True)
                 b = self._json_body() or {}
@@ -488,6 +526,29 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(404, {"error": "unknown route"})
         except Exception as e:  # noqa
             return self._send(500, {"error": str(e)})
+
+    def _cv_pdf(self, q):
+        """Render the master CV to PDF via cvgen's headless-Chrome path and stream it back."""
+        import tempfile
+        d = tempfile.mkdtemp()
+        html_path, pdf_path = os.path.join(d, "cv.html"), os.path.join(d, "cv.pdf")
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(_cv_html(q))
+        ok, msg = cvgen._to_pdf(html_path, pdf_path)
+        if not ok:
+            return self._send(503, {"error": msg})
+        with open(pdf_path, "rb") as f:
+            data = f.read()
+        name = "%s-cv.pdf" % (cvgen._candidate_slug() or "master")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/pdf")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", 'attachment; filename="%s"' % name)
+        self.end_headers()
+        try:
+            self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def _serve_file(self, p):
         if not p:
