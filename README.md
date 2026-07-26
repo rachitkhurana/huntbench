@@ -60,8 +60,9 @@ Run `python3 jobsdb.py doctor` any time to check your setup.
   with a ⌘K command palette and a slide-over detail panel. There's also a keyboard-driven terminal
   UI (`dashboard`).
 - **Discovery** — a zero-token **ATS scanner** (`scan`) that pulls openings straight from company
-  career boards (Greenhouse/Ashby/Lever/Workable/Recruitee/SmartRecruiters), plus `add` / `bulk-add`
-  for anything your agent finds elsewhere.
+  career boards (Greenhouse/Ashby/Lever/Workable/Recruitee/SmartRecruiters) **and remote-job feeds**
+  (RemoteOK, Remotive, or any RSS/Atom feed), plus `add` / `bulk-add` / `addurl` for anything your
+  agent finds elsewhere.
 - **Fit scoring** — every job gets a 1–5 score from your target roles + a `portals.yml` title filter.
 - **Tailored CVs** — `cv` renders a clean, ATS-safe CV + cover letter (HTML/PDF/TXT) from your
   master CV; `tailor` (or your agent) reshapes it to a specific job.
