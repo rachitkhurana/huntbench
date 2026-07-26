@@ -223,6 +223,7 @@ def normalize(raw):
     rec.setdefault("enriched", False)
     rec.setdefault("enrichment", None)
     rec.setdefault("promoted_to", None)
+    rec["saved"] = bool(rec.get("saved"))
     rec.setdefault("created", TODAY)
     rec["updated"] = rec.get("updated") or TODAY
     if not rec.get("fit_score"):
@@ -301,7 +302,7 @@ def index_by_id(records):
 # 'applied' job back to 'new', wipe a fit rating, notes, or the activity log.
 USER_STATE_FIELDS = frozenset({
     "status", "fit_score", "fit_reason", "notes", "activity",
-    "promoted_to", "enriched", "enrichment", "date_found",
+    "promoted_to", "enriched", "enrichment", "date_found", "saved",
 })
 
 
@@ -675,6 +676,10 @@ def cmd_update(args):
             if t and t not in tags:
                 tags.append(t)
         rec["tags"] = tags
+    if getattr(args, "save", False):
+        rec["saved"] = True
+    if getattr(args, "unsave", False):
+        rec["saved"] = False
     if args.promoted_to is not None:
         rec["promoted_to"] = args.promoted_to
     if args.rescore:
@@ -1019,6 +1024,8 @@ def build_parser():
     sp.add_argument("--add-tag", dest="add_tag", help="comma-separated tags to add")
     sp.add_argument("--promoted-to", dest="promoted_to")
     sp.add_argument("--rescore", action="store_true")
+    sp.add_argument("--save", action="store_true", help="bookmark this job (saved=true)")
+    sp.add_argument("--unsave", action="store_true", help="remove the bookmark (saved=false)")
     sp.set_defaults(func=cmd_update)
 
     sp = sub.add_parser("enrich", help="flag or attach full-JD data")

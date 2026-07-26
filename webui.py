@@ -124,7 +124,7 @@ def start_task(cmd, params):
 # ---- payload builders --------------------------------------------------------
 
 _ROW_KEYS = ("id", "company", "title", "fit_score", "status", "region_bucket",
-             "work_mode", "location", "tags", "enriched", "url", "experience_tag", "salary")
+             "work_mode", "location", "tags", "enriched", "url", "experience_tag", "salary", "saved")
 
 
 def row(rec):
@@ -148,6 +148,8 @@ def apply_update(records, jid, changes):
             pass
     if "notes" in changes:
         rec["notes"] = changes.get("notes") or ""
+    if "saved" in changes:
+        rec["saved"] = bool(changes["saved"])
     tag = (changes.get("add_tag") or "").strip()
     if tag:
         tags = rec.get("tags") or []
@@ -345,6 +347,7 @@ def meta_payload():
         "status_color": dashboard._STATUS_COLOR, "region_color": dashboard._REGION_COLOR,
         "funnel": jobsdb.funnel_counts(db), "region_counts": jobsdb.region_counts(db),
         "fit_counts": jobsdb.fit_counts(db), "total": len(db),
+        "saved_count": sum(1 for r in db if r.get("saved")),
     }
 
 
@@ -460,6 +463,8 @@ class Handler(BaseHTTPRequestHandler):
                 rows = dashboard.build_view(
                     db, (q.get("region") or [""])[0], (q.get("status") or [""])[0],
                     (q.get("q") or [""])[0], (q.get("sort") or ["fit"])[0])
+                if (q.get("saved") or [""])[0]:
+                    rows = [r for r in rows if r.get("saved")]
                 return self._send(200, {"jobs": [row(r) for r in rows], "count": len(rows)})
             if path.startswith("/api/job/"):
                 parts = path[len("/api/job/"):].split("/")

@@ -5,6 +5,7 @@ import { el, esc } from '../lib/dom.js';
 import { STATE, store, WML, EXPL, TAG_SKIP, cleanLoc } from '../lib/state.js';
 import { monogram, stpill, fitStyle } from '../lib/ui.js';
 import { openDetail } from './panel.js';
+import { star } from '../lib/saved.js';
 
 export function cardEl(r){
   const card=el("div","jcard"+(r.id===STATE.id?" sel":"")); card.dataset.id=r.id;
@@ -21,6 +22,7 @@ export function cardEl(r){
     `<div class="jc-ti">${esc(r.title)}</div>`+
     `<div class="jc-meta">${stpill(r.status)}${meta.map(m=>'<span class="sep">·</span>'+m).join("")}</div>`+
     `<div class="jc-foot">${wm}${tags}<span class="sp"></span><span class="rtag">${esc(store.META.region_abbr[r.region_bucket]||"?")}</span></div>`;
+  card.querySelector(".jc-top").appendChild(star(r));
   card.onclick=()=>openDetail(r.id);
   return card;
 }

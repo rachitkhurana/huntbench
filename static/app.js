@@ -11,6 +11,7 @@ import { openDetail, closePanel } from './views/panel.js';
 import { renderOnboard } from './views/onboard.js';
 import { openAddDialog } from './lib/addjob.js';
 import './views/list.js';     // registerView("list", …)  (pulls in cards.js)
+import './views/saved.js';    // registerView("saved", …)
 import './views/board.js';    // registerView("board", …)
 import './views/inbox.js';    // registerView("inbox", …)
 import './views/profile.js';  // registerView("profile", …)
@@ -22,8 +23,8 @@ async function init(){
   await bootDashboard();
 }
 async function bootDashboard(){
-  $("#ic-list").innerHTML=icon("list"); $("#ic-board").innerHTML=icon("board"); $("#ic-inbox").innerHTML=icon("inbox");
-  $("#ic-profile").innerHTML=icon("profile");
+  $("#ic-list").innerHTML=icon("list"); $("#ic-saved").innerHTML=icon("saved"); $("#ic-board").innerHTML=icon("board");
+  $("#ic-inbox").innerHTML=icon("inbox"); $("#ic-profile").innerHTML=icon("profile");
   store.META=await api("/api/meta");
   $("#sort").innerHTML=store.META.sorts.map(s=>`<option value="${s}">sort: ${s}</option>`).join("");
   buildChips(); buildStats(); syncBadges();
@@ -85,6 +86,7 @@ function buildCmd(q){
   q=(q||"").toLowerCase().trim();
   const actions=[
     {t:"Go to All jobs",s:"view",hint:"",run:()=>{setView("list");closeCmdk();}},
+    {t:"Go to Saved",s:"view",run:()=>{setView("saved");closeCmdk();}},
     {t:"Go to Board",s:"view",run:()=>{setView("board");closeCmdk();}},
     {t:"Go to Inbox",s:"view",run:()=>{setView("inbox");closeCmdk();}},
     {t:"Toggle card view",s:"view",run:()=>{setListmode(STATE.listmode==="cards"?"list":"cards");closeCmdk();}},

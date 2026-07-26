@@ -22,7 +22,7 @@ stores and serves the results. Everything runs locally from this repo with `pyth
 ./jobsdb.py addurl <posting-url>             # fetch+score one posting from an ATS URL -> 'new'
 ./jobsdb.py addurl <board-url> --board       # track a whole ATS board (appends portals.yml), then scan
 ./jobsdb.py list [--region uae] [--min-fit 4] [--status new] [--json]
-./jobsdb.py update --id <id> --status shortlisted   # (also --fit, --notes, --add-tag)
+./jobsdb.py update --id <id> --status shortlisted   # (also --fit, --notes, --add-tag, --save/--unsave)
 ./jobsdb.py enrich --id <id> --attach jd.json       # attach a full JD ({"description": "..."})
 ./jobsdb.py cv --id <id> [--slug foo] [--no-pdf]     # render a tailored CV + cover letter
 ./jobsdb.py tailor --id <id>           # AI-tailor the CV to the JD (uses the `claude` CLI if present)
@@ -31,8 +31,9 @@ stores and serves the results. Everything runs locally from this repo with `pyth
 ./jobsdb.py reset --yes [--demo]       # clear (or reseed demo) the database
 ```
 A job record is one JSON line in `jobs.ndjson`: `id, company, title, location, url, status, tags,
-fit_score, region_bucket, work_mode, experience_tag, salary, notes, enrichment{description,skills},
+fit_score, region_bucket, work_mode, experience_tag, salary, notes, saved, enrichment{description,skills},
 activity[]`. Statuses: `new, shortlisted, skip, applied, screening, interviewing, offer, closed, passed`.
+`saved` is a ★ bookmark orthogonal to status (`update --save` / `--unsave`); the dashboard has a Saved view.
 
 ## Workflow 1 — Onboard a new user ("set me up")
 1. **Interview** them briefly: name, contact (email/phone/LinkedIn/portfolio), location + work

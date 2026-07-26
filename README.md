@@ -64,6 +64,7 @@ Run `python3 jobsdb.py doctor` any time to check your setup.
   (RemoteOK, Remotive, or any RSS/Atom feed), plus `add` / `bulk-add` / `addurl` for anything your
   agent finds elsewhere.
 - **Fit scoring** — every job gets a 1–5 score from your target roles + a `portals.yml` title filter.
+- **Save ★** — bookmark any job (independent of its pipeline stage) and browse them in a **Saved** view.
 - **Tailored CVs** — `cv` renders a clean, ATS-safe CV + cover letter (HTML/PDF/TXT) from your
   master CV; `tailor` (or your agent) reshapes it to a specific job.
 - **Apply packets** — `apply` assembles a CV + mapped form fields + drafted answers; your agent then
