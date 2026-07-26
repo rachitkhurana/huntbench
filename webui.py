@@ -24,6 +24,7 @@ import urllib.parse
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+import addjob
 import cvgen
 import dashboard
 import jobsdb
@@ -550,6 +551,16 @@ class Handler(BaseHTTPRequestHandler):
                 if (self._json_body() or {}).get("clear_demo"):
                     jobsdb.save_db([])
                 return self._send(200, {"ok": True, **status_payload()})
+            if path == "/api/add":
+                b = self._json_body() or {}
+                url, kind = (b.get("url") or "").strip(), b.get("kind")
+                if kind == "board":
+                    res = addjob.add_board(url)
+                elif kind == "posting":
+                    res = addjob.add_posting(url)
+                else:
+                    return self._send(400, {"error": "kind must be 'posting' or 'board'"})
+                return self._send(400 if res.get("error") else 200, res)
             if path == "/api/tasks":
                 body = self._json_body()
                 if body.get("cmd") not in ALLOWED_TASK_CMDS:

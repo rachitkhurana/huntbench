@@ -590,6 +590,25 @@ def cmd_add(args):
     print("add: +%d new, %d merged (total %d)" % (added, updated, len(db)))
 
 
+def cmd_addurl(args):
+    import addjob  # lazy: addjob imports jobsdb
+    res = addjob.add_board(args.url) if args.board else addjob.add_posting(args.url)
+    if res.get("error"):
+        sys.exit("addurl: " + res["error"])
+    if args.board:
+        if res.get("existed"):
+            print("addurl: board already tracked — %s (%s)" % (res.get("name"), res.get("provider")))
+        else:
+            print("addurl: added board %s (%s) — %d open roles. Re-scan to pull them in."
+                  % (res.get("name"), res.get("provider"), res.get("count", 0)))
+    else:
+        rec = res.get("record") or {}
+        verb = ("already in list" if res.get("existed")
+                else "added (lead)" if res.get("source") == "lead" else "added")
+        print("addurl: %s — %s · %s  [%s] fit %s"
+              % (verb, rec.get("company"), rec.get("title"), rec.get("id"), rec.get("fit_score")))
+
+
 def cmd_bulk_add(args):
     with open(args.file, "r", encoding="utf-8") as f:
         data = f.read().strip()
@@ -970,6 +989,11 @@ def build_parser():
     sp = sub.add_parser("add", help="add one record")
     add_record_flags(sp)
     sp.set_defaults(func=cmd_add)
+
+    sp = sub.add_parser("addurl", help="add a job posting (or --board a whole board) from a URL")
+    sp.add_argument("url")
+    sp.add_argument("--board", action="store_true", help="treat the URL as a board to track + scan")
+    sp.set_defaults(func=cmd_addurl)
 
     sp = sub.add_parser("bulk-add", help="add many from a JSON/NDJSON file")
     sp.add_argument("--file", required=True)

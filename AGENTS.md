@@ -19,6 +19,8 @@ stores and serves the results. Everything runs locally from this repo with `pyth
 ./jobsdb.py serve                      # web dashboard (http://127.0.0.1:8765)
 ./jobsdb.py scan [--company X] [--dry-run]   # pull jobs from ATS boards in config/portals.yml
 ./jobsdb.py add / bulk-add --file f.ndjson   # add jobs you found elsewhere (JSON/NDJSON)
+./jobsdb.py addurl <posting-url>             # fetch+score one posting from an ATS URL -> 'new'
+./jobsdb.py addurl <board-url> --board       # track a whole ATS board (appends portals.yml), then scan
 ./jobsdb.py list [--region uae] [--min-fit 4] [--status new] [--json]
 ./jobsdb.py update --id <id> --status shortlisted   # (also --fit, --notes, --add-tag)
 ./jobsdb.py enrich --id <id> --attach jd.json       # attach a full JD ({"description": "..."})
