@@ -40,6 +40,7 @@
     </div>
     <input id="q" class="tbtn" style="width:210px" type="search" placeholder="Filter…" autocomplete="off">
     <select id="sort" class="tbtn" title="sort"></select>
+    <button id="addBtn" class="tbtn" title="add a job posting or board from a URL">＋ Add job</button>
     <button id="syncBtn" class="tbtn" title="request a Gmail inbox sync (runs via Claude in chat)">✉ Sync inbox</button>
     <button id="scanBtn" class="tbtn" title="scan ATS portals">⟳ Scan</button>
   </div>
@@ -57,6 +58,23 @@
   <div class="cmdk">
     <input id="cmdkInput" placeholder="Type a command or search jobs…" autocomplete="off">
     <div class="cmdk-list" id="cmdkList"></div>
+  </div>
+</div>
+
+<div class="cmdk-back" id="addBack">
+  <div class="addmodal">
+    <div class="am-head">Add a job</div>
+    <div class="seg am-seg" id="addSeg">
+      <button data-k="posting" class="on">Posting</button>
+      <button data-k="board">Board</button>
+    </div>
+    <input id="addUrl" class="am-input" type="url" placeholder="Paste a job posting URL…" autocomplete="off">
+    <div class="am-hint" id="addHint"></div>
+    <div class="am-actions">
+      <button class="tbtn" id="addCancel">Cancel</button>
+      <button class="ob-btn" id="addGo">Add</button>
+    </div>
+    <div class="am-result" id="addResult"></div>
   </div>
 </div>
 

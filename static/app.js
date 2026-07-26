@@ -9,6 +9,7 @@ import { buildChips, buildStats, syncBadges, refreshMeta, toggleSec } from './li
 import { runTask, requestSync, refreshSyncState } from './lib/tasks.js';
 import { openDetail, closePanel } from './views/panel.js';
 import { renderOnboard } from './views/onboard.js';
+import { openAddDialog } from './lib/addjob.js';
 import './views/list.js';     // registerView("list", …)  (pulls in cards.js)
 import './views/board.js';    // registerView("board", …)
 import './views/inbox.js';    // registerView("inbox", …)
@@ -29,6 +30,7 @@ async function bootDashboard(){
   $("#q").addEventListener("input",debounce(()=>{STATE.q=$("#q").value;refreshView();},220));
   $("#sort").addEventListener("change",()=>{STATE.sort=$("#sort").value;refreshView();});
   $("#scanBtn").onclick=()=>runTask({cmd:"scan"},"Scanning ATS portals",()=>{refreshMeta();refreshView();});
+  $("#addBtn").onclick=openAddDialog;
   $("#syncBtn").onclick=requestSync; refreshSyncState();
   document.querySelectorAll(".navitem").forEach(n=>n.onclick=()=>setView(n.dataset.view));
   document.querySelectorAll(".seclabel").forEach(l=>l.onclick=()=>toggleSec(l.dataset.sec));
@@ -86,6 +88,7 @@ function buildCmd(q){
     {t:"Go to Board",s:"view",run:()=>{setView("board");closeCmdk();}},
     {t:"Go to Inbox",s:"view",run:()=>{setView("inbox");closeCmdk();}},
     {t:"Toggle card view",s:"view",run:()=>{setListmode(STATE.listmode==="cards"?"list":"cards");closeCmdk();}},
+    {t:"Add job posting / board",s:"action",run:()=>{closeCmdk();openAddDialog();}},
     {t:"Scan ATS portals",s:"action",run:()=>{runTask({cmd:"scan"},"Scanning ATS portals",()=>{refreshMeta();refreshView();});closeCmdk();}},
     {t:"Sync inbox",s:"action",run:()=>{requestSync();closeCmdk();}},
     {t:"Re-render markdown views",s:"action",run:()=>{runTask({cmd:"render"},"Regenerating views");closeCmdk();}},

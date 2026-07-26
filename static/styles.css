@@ -245,6 +245,25 @@ textarea:focus{border-color:var(--accent)}
 .cmdk-item .ci-s{color:var(--text3);font-size:12px}
 .cmdk-item .hint{font:11px var(--mono);color:var(--text3)}
 
+/* ---------- add-job modal (shares .cmdk-back backdrop) ---------- */
+.addmodal{width:min(520px,92vw);background:#fff;border:1px solid var(--border);border-radius:13px;
+  box-shadow:var(--sh-lg);padding:18px;display:flex;flex-direction:column;gap:12px;
+  transform:scale(.97) translateY(-6px);transition:transform .15s var(--ease)}
+.cmdk-back.open .addmodal{transform:none}
+.am-head{font-size:15px;font-weight:600}
+.am-seg{align-self:flex-start}
+.am-input{width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;
+  font:13.5px var(--font);color:var(--text);outline:none;transition:border-color .12s}
+.am-input:focus{border-color:var(--accent)}
+.am-hint{font-size:12px;color:var(--text3);line-height:1.5}
+.am-actions{display:flex;justify-content:flex-end;gap:8px;align-items:center}
+.am-result:empty{display:none}
+.am-result{font-size:12.5px;line-height:1.6;color:var(--text2);border-top:1px solid var(--border);padding-top:12px}
+.am-result .am-ok b{color:var(--text)}
+.am-prov{font:10.5px var(--mono);color:var(--text3);border:1px solid var(--border);border-radius:5px;padding:1px 6px;text-transform:uppercase}
+.am-err{color:var(--red)}
+.am-rescan{display:flex;gap:8px;margin-top:10px}
+
 /* ---------- onboarding ---------- */
 #onboard{position:fixed;inset:0;z-index:80;background:var(--bg);overflow-y:auto;display:none}
 #onboard.show{display:block}
