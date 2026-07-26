@@ -302,6 +302,8 @@ def _to_record(entry, provider, job):
         "experience_tag": _exp_tag(job["title"]),
         "tags": tags,
     }
+    if provider in ("remoteok", "remotive"):   # remote-only job boards → don't leave as 'unknown'
+        rec["work_mode"] = "remote"
     if desc:
         rec["enriched"] = True
         rec["enrichment"] = {"description": desc, "skills": [],

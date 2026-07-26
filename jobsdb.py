@@ -78,7 +78,7 @@ def infer_work_mode(loc):
     l = (loc or "").lower()
     if "hybrid" in l:
         return "hybrid"
-    if "remote" in l:
+    if "remote" in l or any(k in l for k in ("worldwide", "anywhere", "wfh", "work from home")):
         return "remote"
     if "on-site" in l or "onsite" in l or "on site" in l:
         return "onsite"

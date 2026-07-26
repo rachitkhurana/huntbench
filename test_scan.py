@@ -124,6 +124,20 @@ def test_to_record_company_and_tags():
     assert rec2["tags"] == ["portal", "greenhouse"]
 
 
+def test_feed_work_mode():
+    import jobsdb
+    # remote-only aggregators are forced remote regardless of the location string
+    rec = scan._to_record({"name": "RemoteOK"}, "remoteok",
+                          {"ext_id": "1", "title": "FE", "company": "Acme", "location": "USA Only"})
+    assert rec["work_mode"] == "remote", rec.get("work_mode")
+    # ATS/rss set no work_mode -> normalize infers it; worldwide/anywhere now read as remote
+    ats = scan._to_record({"name": "V"}, "greenhouse", {"ext_id": "9", "title": "FE", "location": "Berlin"})
+    assert "work_mode" not in ats
+    assert jobsdb.infer_work_mode("Anywhere in the World") == "remote"
+    assert jobsdb.infer_work_mode("Worldwide") == "remote"
+    assert jobsdb.infer_work_mode("Berlin, Germany") == "unknown"
+
+
 def test_resolve():
     assert scan.resolve_provider({"provider": "remoteok"}) == "remoteok"
     assert scan.resolve_provider({"provider": "rss", "feed": "x"}) == "rss"
@@ -142,6 +156,7 @@ def main():
     test_remoteok()
     test_remotive()
     test_to_record_company_and_tags()
+    test_feed_work_mode()
     test_resolve()
     print("test_scan: OK")
 
