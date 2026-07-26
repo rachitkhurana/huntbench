@@ -30,6 +30,17 @@ import jobsdb
 
 HERE = jobsdb.HERE
 HTML_PATH = os.path.join(HERE, "webui.html")     # the Linear-style light UI, served at /
+STATIC_DIR = os.path.join(HERE, "static")        # ES-module JS + CSS, served under /static/
+
+# Static asset content-types (native ES modules require a JS MIME type).
+_STATIC_TYPES = {
+    ".js": "text/javascript; charset=utf-8",
+    ".mjs": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".svg": "image/svg+xml",
+    ".json": "application/json; charset=utf-8",
+    ".woff2": "font/woff2",
+}
 # A "sync inbox" click drops this signal file; Claude (in chat / watching) picks it up, runs the
 # Gmail sync, then removes it. The server can't read Gmail itself (agent-side MCP only).
 SYNC_REQ = os.path.join(HERE, ".sync-request.json")
@@ -356,6 +367,30 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
+    def _serve_static(self, path):
+        # Serve files under static/ (JS modules + CSS). Guard against path traversal by
+        # requiring the resolved real path to stay inside STATIC_DIR (same idea as _FILE_ROOTS).
+        rel = urllib.parse.unquote(path[len("/static/"):])
+        full = os.path.realpath(os.path.join(STATIC_DIR, rel))
+        root = os.path.realpath(STATIC_DIR)
+        if not (full == root or full.startswith(root + os.sep)) or not os.path.isfile(full):
+            return self._send(404, {"error": "not found"})
+        ctype = _STATIC_TYPES.get(os.path.splitext(full)[1].lower(), "application/octet-stream")
+        try:
+            with open(full, "rb") as f:
+                body = f.read()
+        except OSError:
+            return self._send(404, {"error": "not found"})
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-cache")  # local dev: always pick up edits
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     def _json_body(self):
         n = int(self.headers.get("Content-Length") or 0)
         if not n:
@@ -373,6 +408,8 @@ class Handler(BaseHTTPRequestHandler):
             if path in ("/", "/index.html"):
                 with open(HTML_PATH, "r", encoding="utf-8") as f:
                     return self._send(200, f.read(), "text/html; charset=utf-8")
+            if path.startswith("/static/"):
+                return self._serve_static(path)
             if path == "/api/status":
                 return self._send(200, status_payload())
             if path == "/api/setup/starter-companies":
