@@ -10,12 +10,14 @@ filters, and upserts them into jobs.ndjson via jobsdb. Pure Python stdlib (urlli
     ./jobsdb.py scan --dry-run
 """
 
+import hashlib
 import html
 import json
 import re
 import sys
 import urllib.request
 import urllib.error
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse
 
@@ -33,6 +35,16 @@ def _get_json(url):
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             return json.loads(r.read().decode("utf-8", "replace"))
     except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError, OSError):
+        return None
+
+
+def _get_text(url):
+    req = urllib.request.Request(url, headers={
+        "User-Agent": UA, "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*"})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            return r.read().decode("utf-8", "replace")
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError):
         return None
 
 
@@ -120,9 +132,90 @@ def _p_smartrecruiters(slug):
     return out
 
 
+# ---- feed sources: whole-feed (many companies per source); each job carries its own company --
+
+_ATOM = "{http://www.w3.org/2005/Atom}"
+
+
+def _first(el, *tags):
+    """First non-empty text (or href) among child tags — handles RSS + Atom shapes."""
+    for t in tags:
+        c = el.find(t)
+        if c is not None:
+            if c.text and c.text.strip():
+                return c.text.strip()
+            href = c.get("href")
+            if href and href.strip():
+                return href.strip()
+    return ""
+
+
+def _p_rss(feed_url):
+    """Generic RSS/Atom job feed. Title convention 'Company: Role' is split when present."""
+    txt = _get_text(feed_url)
+    if not txt:
+        return []
+    try:
+        root = ET.fromstring(txt.encode("utf-8"))
+    except ET.ParseError:
+        return []
+    items = list(root.iter("item")) or list(root.iter(_ATOM + "entry"))
+    out = []
+    for it in items:
+        title = _first(it, "title", _ATOM + "title")
+        link = _first(it, "link", _ATOM + "link")
+        if not title or not link:
+            continue
+        company = ""
+        if ":" in title:
+            company, title = [s.strip() for s in title.split(":", 1)]
+        gid = _first(it, "guid", _ATOM + "id") or link
+        out.append({
+            "ext_id": gid or ("h" + hashlib.sha1(link.encode("utf-8")).hexdigest()[:12]),
+            "title": title, "company": company,
+            "location": _first(it, "region"),   # <category> is a topic, not a place — skip it
+            "url": link,
+            "description": _strip_html(_first(it, "description", _ATOM + "summary", _ATOM + "content")),
+        })
+    return out
+
+
+def _p_remoteok(slug=None):
+    data = _get_json("https://remoteok.com/api")
+    out = []
+    for j in (data or []):
+        if not isinstance(j, dict) or not j.get("position"):
+            continue                       # index 0 is a legal/metadata blob
+        out.append({"ext_id": j.get("id") or j.get("slug"), "title": j.get("position") or "",
+                    "company": (j.get("company") or "").strip(),
+                    "location": (j.get("location") or "").strip().strip(",").strip(),
+                    "url": j.get("url") or j.get("apply_url") or "",
+                    "description": _strip_html(j.get("description")),
+                    "tags": [str(t) for t in (j.get("tags") or []) if t]})
+    return out
+
+
+def _p_remotive(slug=None):
+    data = _get_json("https://remotive.com/api/remote-jobs")
+    out = []
+    for j in (data or {}).get("jobs", []):
+        out.append({"ext_id": j.get("id"), "title": j.get("title") or "",
+                    "company": (j.get("company_name") or "").strip(),
+                    "location": j.get("candidate_required_location") or "",
+                    "url": j.get("url") or "",
+                    "description": _strip_html(j.get("description")),
+                    "tags": [str(t) for t in (j.get("tags") or []) if t]})
+    return out
+
+
 PROVIDERS = {"greenhouse": _p_greenhouse, "ashby": _p_ashby, "lever": _p_lever,
              "workable": _p_workable, "recruitee": _p_recruitee,
-             "smartrecruiters": _p_smartrecruiters}
+             "smartrecruiters": _p_smartrecruiters,
+             "rss": _p_rss, "remoteok": _p_remoteok, "remotive": _p_remotive}
+
+# Feed providers hit a fixed endpoint (no per-company slug). resolve_slug hands them their own
+# name so scan.run doesn't skip them; the provider fn ignores the argument.
+FIXED_FEED_PROVIDERS = {"remoteok", "remotive"}
 
 
 def resolve_provider(entry):
@@ -138,6 +231,10 @@ def resolve_provider(entry):
 
 
 def resolve_slug(entry, provider):
+    if provider == "rss":
+        return entry.get("feed") or entry.get("careers_url") or ""
+    if provider in FIXED_FEED_PROVIDERS:
+        return provider                    # fixed endpoint; the provider fn ignores this
     url = entry.get("careers_url") or ""
     host, path = urlparse(url).netloc, urlparse(url).path.strip("/")
     if provider == "recruitee" and host:
@@ -192,16 +289,18 @@ def _to_record(entry, provider, job):
     if not job.get("ext_id") or not job.get("title"):
         return None
     desc = (job.get("description") or "")[:2200]
+    tags = list(dict.fromkeys(
+        ["portal", provider] + [str(t).lower() for t in (job.get("tags") or []) if t]))[:8]
     rec = {
         "id": "%s:%s" % (provider, job["ext_id"]),
-        "company": entry.get("name") or "",
+        "company": job.get("company") or entry.get("name") or "",   # feeds carry per-job company
         "title": job["title"],
         "location": job.get("location") or "",
         "url": job.get("url") or "",
         "source": "portal:%s" % provider,
         "search_query": "scan:%s" % (entry.get("name") or provider),
         "experience_tag": _exp_tag(job["title"]),
-        "tags": ["portal", provider],
+        "tags": tags,
     }
     if desc:
         rec["enriched"] = True

@@ -50,6 +50,9 @@ activity[]`. Statuses: `new, shortlisted, skip, applied, screening, interviewing
 ## Workflow 2 — Discover jobs (use whatever tools you have, degrade gracefully)
 - **ATS scan (works for everyone, no creds):** `./jobsdb.py scan` — pulls openings from the boards
   in `config/portals.yml`. Grow that list as you learn their targets.
+- **Remote-job feeds:** `config/portals.yml` also takes whole-feed sources (many companies at once):
+  `provider: remoteok` / `provider: remotive` (fixed public JSON endpoints), or `provider: rss` with a
+  `feed:` URL for any job RSS/Atom feed (e.g. WeWorkRemotely). The title/location filters narrow them.
 - **Web search / job boards:** if you can browse or search, find roles and `bulk-add` them as an
   NDJSON file (`{"id","company","title","location","url","tags"}` per line — use a stable id).
 - **LinkedIn / other MCP tools:** if the user has a LinkedIn (or similar) MCP connected, search

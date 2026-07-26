@@ -16,6 +16,8 @@ location_filter:
     - "Dubai"
     - "UAE"
     - "Remote"
+    - "Worldwide"      # remote-job feeds label roles like this —
+    - "Anywhere"       # keep them so RemoteOK/Remotive/RSS results come through
   allow:
     - "Remote"
     - "United Arab Emirates"
@@ -489,4 +491,25 @@ tracked_companies:
     careers_url: https://job-boards.greenhouse.io/tamara
     api: https://boards-api.greenhouse.io/v1/boards/tamara/jobs
     notes: "BNPL fintech, Riyadh/Dubai. MENA region — priority geography."
+    enabled: true
+
+  # ── Remote-job aggregators + RSS feeds (whole-feed sources) ───────────────
+  # These pull MANY companies from one public feed (each job carries its own company).
+  # They return a lot — the title_filter / location_filter above narrow them for you.
+  #   provider: remoteok | remotive   -> a fixed public JSON endpoint (no url needed)
+  #   provider: rss                   -> any job RSS/Atom feed; set `feed:` to its URL
+  - name: RemoteOK
+    provider: remoteok
+    notes: "remoteok.com public feed — remote-first, broad."
+    enabled: true
+
+  - name: Remotive
+    provider: remotive
+    notes: "remotive.com public feed — remote-first."
+    enabled: true
+
+  - name: WeWorkRemotely — Programming
+    provider: rss
+    feed: https://weworkremotely.com/categories/remote-programming-jobs.rss
+    notes: "RSS example. Point `feed:` at any job RSS/Atom feed to track it."
     enabled: true
