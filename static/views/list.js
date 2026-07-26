@@ -8,6 +8,7 @@ import { api } from '../lib/api.js';
 import { registerView } from '../lib/nav.js';
 import { openDetail } from './panel.js';
 import { cardGridBody } from './cards.js';
+import { star } from '../lib/saved.js';
 
 async function loadAllJobs(){
   const p=new URLSearchParams({region:STATE.region,status:STATE.status,q:STATE.q,sort:STATE.sort});
@@ -15,8 +16,11 @@ async function loadAllJobs(){
   $("#vcount").textContent=`${d.count}`;
   const c=$("#content"); c.innerHTML="";
   if(!store.ROWS.length){c.appendChild(el("div","empty","No jobs match these filters."));return;}
-  renderGrouped(c, STATE.listmode==="cards" ? cardGridBody : listBody);
+  renderGrouped(c, currentBody());
 }
+
+// The body-builder for the current List/Cards mode — reused by the Saved view.
+export function currentBody(){ return STATE.listmode==="cards" ? cardGridBody : listBody; }
 
 // Shared status-grouping: `buildBody(rows)` returns the DOM node placed under each header.
 export function renderGrouped(c, buildBody){
@@ -48,6 +52,7 @@ function rowEl(r){
     `</div>`+
     `<div class="rright">${wm}<span class="rtag">${esc(store.META.region_abbr[r.region_bucket]||"?")}</span>`+
       `<span class="fitb" style="${fitStyle(r.fit_score)}">${r.fit_score||"·"}</span></div>`;
+  row.querySelector(".rright").prepend(star(r));
   row.onclick=()=>openDetail(r.id);
   return row;
 }

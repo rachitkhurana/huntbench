@@ -14,10 +14,11 @@ def main():
     existing = jobsdb.normalize({
         "id": "co:1", "company": "Acme", "title": "Frontend Engineer",
         "location": "Remote", "status": "applied", "fit_score": 5,
-        "notes": "loved the JD",
+        "notes": "loved the JD", "saved": True,
     })
     assert existing["status"] == "applied"
     assert existing["fit_score"] == 5
+    assert existing["saved"] is True
     db = [existing]
 
     # scan re-detects the same posting; normalize stamps a fresh 'new' status
@@ -34,6 +35,7 @@ def main():
     assert rec["status"] == "applied", rec["status"]
     assert rec["fit_score"] == 5, rec["fit_score"]
     assert rec["notes"] == "loved the JD", rec["notes"]
+    assert rec["saved"] is True, rec["saved"]          # ★ survives a re-scan
     # objective posting fields refreshed
     assert rec["title"] == "Senior Frontend Engineer", rec["title"]
     assert rec["location"] == "Dubai, UAE", rec["location"]
@@ -43,6 +45,7 @@ def main():
         {"id": "co:2", "company": "Beta", "title": "FE"})])
     assert (added, updated) == (1, 0), (added, updated)
     assert jobsdb.index_by_id(db)["co:2"]["status"] == "new"
+    assert jobsdb.index_by_id(db)["co:2"]["saved"] is False   # default off
 
     # --- merge_record modes ---------------------------------------------------
     old = {"id": "x", "status": "applied", "fit_score": 4}

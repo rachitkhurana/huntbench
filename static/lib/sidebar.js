@@ -39,4 +39,5 @@ function mbar(l,v,max,color){
   return b;
 }
 export async function refreshMeta(){store.META=await api("/api/meta");buildChips();buildStats();syncBadges();}
-export function syncBadges(){$("#nb-list").textContent=store.META.total; $("#nb-inbox").textContent=store.META.upcoming_interviews||"";}
+export function syncBadges(){$("#nb-list").textContent=store.META.total; $("#nb-inbox").textContent=store.META.upcoming_interviews||"";
+  $("#nb-saved").textContent=store.META.saved_count||"";}

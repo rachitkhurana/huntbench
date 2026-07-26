@@ -14,7 +14,8 @@ export function icon(name){const p={
   list:'<path d="M2 4h12M2 8h12M2 12h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
   board:'<rect x="2" y="2.5" width="4" height="11" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="10" y="2.5" width="4" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/>',
   inbox:'<path d="M2 3.5h12v9H2z" stroke="currentColor" stroke-width="1.3"/><path d="M2 9h3l1 2h4l1-2h3" stroke="currentColor" stroke-width="1.3" fill="none"/>',
-  profile:'<circle cx="8" cy="5.5" r="2.6" stroke="currentColor" stroke-width="1.3"/><path d="M3 13.5c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>'
+  profile:'<circle cx="8" cy="5.5" r="2.6" stroke="currentColor" stroke-width="1.3"/><path d="M3 13.5c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>',
+  saved:'<path d="M8 1.7l1.9 3.85 4.25.62-3.07 3 .72 4.23L8 13.4l-3.8 2 .72-4.23-3.07-3 4.25-.62z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>'
   }[name];return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">${p}</svg>`;}
 export function stpill(s){const col=SCOLOR[s]||A.gray;return `<span class="stpill" style="color:${col}">${statusIcon(s,11)}${esc(s)}</span>`;}
 

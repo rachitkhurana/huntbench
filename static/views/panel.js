@@ -7,6 +7,7 @@ import { toast } from '../lib/toast.js';
 import { refreshView } from '../lib/nav.js';
 import { refreshMeta } from '../lib/sidebar.js';
 import { runTask } from '../lib/tasks.js';
+import { star } from '../lib/saved.js';
 
 export async function openDetail(id){
   store.drawerId=id; STATE.id=id;
@@ -21,7 +22,10 @@ function renderPanel(r){
   const enr=r.enrichment||{}; const rl=store.META.region_label[r.region_bucket]||r.region_bucket;
   $("#pbCrumb").textContent=(r.company||"")+" · "+(r.id||"");
   const d=$("#panelBody"); d.innerHTML="";
-  d.appendChild(el("div",null,`<div class="p-co">${esc(r.company)}</div><div class="p-ti">${esc(r.title)}</div>`));
+  const head=el("div","p-head"); head.dataset.id=r.id;
+  head.innerHTML=`<div class="p-titles"><div class="p-co">${esc(r.company)}</div><div class="p-ti">${esc(r.title)}</div></div>`;
+  head.appendChild(star(r));
+  d.appendChild(head);
   const props=el("div","props");
   props.innerHTML=`<div class="k">Status</div><div class="v">${stpill(r.status)}</div>`+
     `<div class="k">Fit</div><div class="v"><span class="fitb" style="${fitStyle(r.fit_score)}">${r.fit_score||"?"}</span></div>`+
