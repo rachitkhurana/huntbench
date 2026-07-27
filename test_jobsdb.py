@@ -57,6 +57,17 @@ def main():
     assert keep["status"] == "applied", keep["status"]
     assert keep["fit_score"] == 4, keep["fit_score"]
 
+    # --- experience filter + sort + counts ------------------------------------
+    import dashboard
+    exp = [jobsdb.normalize({"id": "e:%d" % i, "experience_tag": t, "fit_score": f})
+           for i, (t, f) in enumerate([("senior", 3), ("10-12yr", 2), ("mid", 5), ("unknown", 4)])]
+    assert jobsdb.experience_counts(exp) == {"senior": 1, "10-12yr": 1, "mid": 1, "unknown": 1}
+    only = dashboard.build_view(exp, "", "", "", "fit", experience="senior")
+    assert [r["experience_tag"] for r in only] == ["senior"], only
+    order = [r["experience_tag"] for r in dashboard.build_view(exp, "", "", "", "experience")]
+    assert order == ["10-12yr", "senior", "mid", "unknown"], order   # senior-first, unknown last
+    assert "experience" in dashboard.SORTS
+
     print("test_jobsdb: OK")
 
 

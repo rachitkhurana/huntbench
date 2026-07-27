@@ -49,6 +49,9 @@ TODAY = datetime.date.today().isoformat()
 
 REGIONS = ["uae", "remote-emea", "europe", "australia", "india", "other"]
 WORK_MODES = ["onsite", "hybrid", "remote", "unknown"]
+# experience ladder, ascending seniority (director="Lead+", 10-12yr="Staff/Principal");
+# free-form tags outside this list rank below all of them. Not validated on ingest.
+EXPERIENCE = ["mid", "mid-senior", "senior", "lead", "director", "principal", "10-12yr"]
 # funnel order matters for stats + rendering
 STATUSES = ["new", "shortlisted", "skip", "applied",
             "screening", "interviewing", "offer", "closed", "passed"]
@@ -449,6 +452,15 @@ def fit_counts(records):
         fs = r.get("fit_score") or 0
         if fs in counts:
             counts[fs] += 1
+    return counts
+
+
+def experience_counts(records):
+    # tolerant: experience_tag is free-form, so count whatever's present (no fixed seed).
+    counts = {}
+    for r in records:
+        t = r.get("experience_tag") or "unknown"
+        counts[t] = counts.get(t, 0) + 1
     return counts
 
 

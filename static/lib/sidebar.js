@@ -1,7 +1,7 @@
 // Sidebar: region/status filter chips, the overview mini-bars, section collapse,
 // nav badges, and the meta refresh that repaints them.
-import { $, el, esc } from './dom.js';
-import { STATE, store, SCOLOR, FITC, SECOFF } from './state.js';
+import { $, el, esc, cap } from './dom.js';
+import { STATE, store, SCOLOR, FITC, SECOFF, EXPL } from './state.js';
 import { api } from './api.js';
 import { refreshView } from './nav.js';
 
@@ -23,6 +23,11 @@ export function buildChips(){
   const sc=$("#statusChips"); sc.innerHTML="";
   chip(sc,"all",null,STATE.status==="",()=>{STATE.status="";refreshView();buildChips();});
   META.statuses.forEach(s=>chip(sc,s,META.funnel[s],STATE.status===s,()=>{STATE.status=STATE.status===s?"":s;refreshView();buildChips();}));
+  const ec=$("#experienceChips"); ec.innerHTML="";
+  const ecounts=META.experience_counts||{}, order=META.experiences||[];
+  const tags=[...order.filter(t=>ecounts[t]), ...Object.keys(ecounts).filter(t=>ecounts[t]&&!order.includes(t))];
+  chip(ec,"all",null,STATE.experience==="",()=>{STATE.experience="";refreshView();buildChips();});
+  tags.forEach(t=>chip(ec,EXPL[t]||cap(t),ecounts[t],STATE.experience===t,()=>{STATE.experience=STATE.experience===t?"":t;refreshView();buildChips();}));
 }
 export function buildStats(){
   const META=store.META;
