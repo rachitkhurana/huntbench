@@ -38,7 +38,7 @@ REGION_ABBR = {
     "uae": "uae", "remote-emea": "rem", "europe": "eu", "australia": "au",
     "india": "in", "other": "oth",
 }
-SORTS = ["fit", "company", "status"]
+SORTS = ["fit", "company", "status", "experience"]
 
 _ASCII = {"—": "-", "–": "-", "·": "-", "…": "...", "→": "->",
           "’": "'", "“": '"', "”": '"', "•": "*", "≥": ">=",
@@ -79,15 +79,24 @@ def _status_rank(r):
     return jobsdb.STATUSES.index(st) if st in jobsdb.STATUSES else 99
 
 
-def build_view(records, region, status, query, sort_mode):
+def _exp_rank(r):
+    tag = r.get("experience_tag", "unknown")
+    return jobsdb.EXPERIENCE.index(tag) if tag in jobsdb.EXPERIENCE else -1
+
+
+def build_view(records, region, status, query, sort_mode, experience=""):
     rows = [r for r in records
             if (not region or r.get("region_bucket") == region)
             and (not status or r.get("status") == status)
+            and (not experience or r.get("experience_tag") == experience)
             and matches_query(r, query)]
     if sort_mode == "company":
         rows.sort(key=lambda r: (r.get("company") or "").lower())
     elif sort_mode == "status":
         rows.sort(key=lambda r: (_status_rank(r), -(r.get("fit_score") or 0)))
+    elif sort_mode == "experience":  # most-senior-first, unknown last
+        rows.sort(key=lambda r: (-_exp_rank(r), -(r.get("fit_score") or 0),
+                                 (r.get("company") or "").lower()))
     else:  # fit
         rows.sort(key=lambda r: (-(r.get("fit_score") or 0), _region_rank(r),
                                  (r.get("company") or "").lower()))
