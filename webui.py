@@ -349,6 +349,7 @@ def meta_payload():
         "fit_counts": jobsdb.fit_counts(db), "total": len(db),
         "saved_count": sum(1 for r in db if r.get("saved")),
         "experiences": jobsdb.EXPERIENCE, "experience_counts": jobsdb.experience_counts(db),
+        "sources": jobsdb.SOURCES, "source_counts": jobsdb.source_counts(db),
     }
 
 
@@ -464,7 +465,7 @@ class Handler(BaseHTTPRequestHandler):
                 rows = dashboard.build_view(
                     db, (q.get("region") or [""])[0], (q.get("status") or [""])[0],
                     (q.get("q") or [""])[0], (q.get("sort") or ["fit"])[0],
-                    (q.get("experience") or [""])[0])
+                    (q.get("experience") or [""])[0], (q.get("source") or [""])[0])
                 if (q.get("saved") or [""])[0]:
                     rows = [r for r in rows if r.get("saved")]
                 return self._send(200, {"jobs": [row(r) for r in rows], "count": len(rows)})

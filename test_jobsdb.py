@@ -68,6 +68,18 @@ def main():
     assert order == ["10-12yr", "senior", "mid", "unknown"], order   # senior-first, unknown last
     assert "experience" in dashboard.SORTS
 
+    # --- source filter + sort + counts ----------------------------------------
+    src = [jobsdb.normalize({"id": "s:%d" % i, "source": s, "fit_score": f})
+           for i, (s, f) in enumerate([("linkedin-search", 3), ("portal:greenhouse", 2),
+                                       ("manual", 5), ("portal:ashby", 4)])]
+    assert jobsdb.source_counts(src) == {"linkedin-search": 1, "portal:greenhouse": 1,
+                                         "manual": 1, "portal:ashby": 1}
+    only = dashboard.build_view(src, "", "", "", "fit", source="manual")
+    assert [r["source"] for r in only] == ["manual"], only
+    order = [r["source"] for r in dashboard.build_view(src, "", "", "", "source")]
+    assert order == ["portal:greenhouse", "portal:ashby", "linkedin-search", "manual"], order  # canonical group order
+    assert "source" in dashboard.SORTS
+
     print("test_jobsdb: OK")
 
 

@@ -31,9 +31,10 @@ stores and serves the results. Everything runs locally from this repo with `pyth
 ./jobsdb.py reset --yes [--demo]       # clear (or reseed demo) the database
 ```
 A job record is one JSON line in `jobs.ndjson`: `id, company, title, location, url, status, tags,
-fit_score, region_bucket, work_mode, experience_tag, salary, notes, saved, enrichment{description,skills},
+fit_score, region_bucket, work_mode, experience_tag, source, salary, notes, saved, enrichment{description,skills},
 activity[]`. Statuses: `new, shortlisted, skip, applied, screening, interviewing, offer, closed, passed`.
 `saved` is a ★ bookmark orthogonal to status (`update --save` / `--unsave`); the dashboard has a Saved view.
+`source` records how a job was added (`portal:<ats>`, `linkedin-search`, `manual`, `gmail-sync`, `demo`); the dashboard filters and sorts by it.
 
 ## Workflow 1 — Onboard a new user ("set me up")
 1. **Interview** them briefly: name, contact (email/phone/LinkedIn/portfolio), location + work

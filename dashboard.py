@@ -38,7 +38,7 @@ REGION_ABBR = {
     "uae": "uae", "remote-emea": "rem", "europe": "eu", "australia": "au",
     "india": "in", "other": "oth",
 }
-SORTS = ["fit", "company", "status", "experience"]
+SORTS = ["fit", "company", "status", "experience", "source"]
 
 _ASCII = {"—": "-", "–": "-", "·": "-", "…": "...", "→": "->",
           "’": "'", "“": '"', "”": '"', "•": "*", "≥": ">=",
@@ -84,11 +84,17 @@ def _exp_rank(r):
     return jobsdb.EXPERIENCE.index(tag) if tag in jobsdb.EXPERIENCE else -1
 
 
-def build_view(records, region, status, query, sort_mode, experience=""):
+def _src_rank(r):
+    s = r.get("source", "")
+    return jobsdb.SOURCES.index(s) if s in jobsdb.SOURCES else len(jobsdb.SOURCES)
+
+
+def build_view(records, region, status, query, sort_mode, experience="", source=""):
     rows = [r for r in records
             if (not region or r.get("region_bucket") == region)
             and (not status or r.get("status") == status)
             and (not experience or r.get("experience_tag") == experience)
+            and (not source or r.get("source") == source)
             and matches_query(r, query)]
     if sort_mode == "company":
         rows.sort(key=lambda r: (r.get("company") or "").lower())
@@ -96,6 +102,9 @@ def build_view(records, region, status, query, sort_mode, experience=""):
         rows.sort(key=lambda r: (_status_rank(r), -(r.get("fit_score") or 0)))
     elif sort_mode == "experience":  # most-senior-first, unknown last
         rows.sort(key=lambda r: (-_exp_rank(r), -(r.get("fit_score") or 0),
+                                 (r.get("company") or "").lower()))
+    elif sort_mode == "source":  # grouped by source (canonical order), then fit
+        rows.sort(key=lambda r: (_src_rank(r), -(r.get("fit_score") or 0),
                                  (r.get("company") or "").lower()))
     else:  # fit
         rows.sort(key=lambda r: (-(r.get("fit_score") or 0), _region_rank(r),
