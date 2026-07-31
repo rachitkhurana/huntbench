@@ -11,7 +11,7 @@ import { cardGridBody } from './cards.js';
 import { star } from '../lib/saved.js';
 
 async function loadAllJobs(){
-  const p=new URLSearchParams({region:STATE.region,status:STATE.status,experience:STATE.experience,q:STATE.q,sort:STATE.sort});
+  const p=new URLSearchParams({region:STATE.region,status:STATE.status,experience:STATE.experience,source:STATE.source,q:STATE.q,sort:STATE.sort});
   const d=await api("/api/jobs?"+p); store.ROWS=d.jobs;
   $("#vcount").textContent=`${d.count}`;
   const c=$("#content"); c.innerHTML="";

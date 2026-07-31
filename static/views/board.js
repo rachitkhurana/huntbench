@@ -7,7 +7,7 @@ import { registerView } from '../lib/nav.js';
 import { openDetail, update } from './panel.js';
 
 async function loadBoard(){
-  const p=new URLSearchParams({region:STATE.region,experience:STATE.experience,q:STATE.q,sort:"fit"});
+  const p=new URLSearchParams({region:STATE.region,experience:STATE.experience,source:STATE.source,q:STATE.q,sort:"fit"});
   const d=await api("/api/jobs?"+p); $("#vcount").textContent=`${d.count}`;
   const by={}; store.META.statuses.forEach(s=>by[s]=[]); d.jobs.forEach(j=>{(by[j.status]||(by[j.status]=[])).push(j);});
   const c=$("#content"); c.innerHTML=""; const board=el("div","board");

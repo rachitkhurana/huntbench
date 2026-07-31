@@ -17,7 +17,7 @@ export const store = {META:null, ROWS:[], REV:null, DRAG:null, drawerId:null};
 
 // Filter/nav state + the two open sets (mutated in place, never reassigned).
 export const STATE = {
-  region:"", status:"", experience:"", q:"", sort:"fit",
+  region:"", status:"", experience:"", source:"", q:"", sort:"fit",
   view: localStorage.getItem("v2view") || "list",
   listmode: localStorage.getItem("v2listmode") || "list",
   id:null, cursor:-1,
@@ -28,5 +28,6 @@ export const SECOFF = new Set();
 // Display lookups shared by the list + cards renderers.
 export const WML = {remote:"Remote",hybrid:"Hybrid",onsite:"On-site"};
 export const EXPL = {"mid":"Mid","mid-senior":"Mid–Senior","senior":"Senior","director":"Lead+","10-12yr":"Staff/Principal","principal":"Principal","lead":"Lead"};
+export const SRCL = {"portal:greenhouse":"Greenhouse","portal:ashby":"Ashby","portal:lever":"Lever","portal:workable":"Workable","portal:recruitee":"Recruitee","portal:smartrecruiters":"SmartRecruiters","portal:rss":"RSS feed","portal:remoteok":"RemoteOK","portal:remotive":"Remotive","linkedin-search":"LinkedIn","manual":"Manual","gmail-sync":"Inbox","demo":"Demo"};
 export const TAG_SKIP = new Set(["portal","greenhouse","ashby","lever","workable","recruitee","smartrecruiters","needs-jd","linkedin","gmail"]);
 export function cleanLoc(l){return (l||"").replace(/\s*\((on-site|remote|hybrid)\)\s*$/i,"").trim();}

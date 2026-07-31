@@ -1,7 +1,7 @@
 // Sidebar: region/status filter chips, the overview mini-bars, section collapse,
 // nav badges, and the meta refresh that repaints them.
 import { $, el, esc, cap } from './dom.js';
-import { STATE, store, SCOLOR, FITC, SECOFF, EXPL } from './state.js';
+import { STATE, store, SCOLOR, FITC, SECOFF, EXPL, SRCL } from './state.js';
 import { api } from './api.js';
 import { refreshView } from './nav.js';
 
@@ -28,6 +28,11 @@ export function buildChips(){
   const tags=[...order.filter(t=>ecounts[t]), ...Object.keys(ecounts).filter(t=>ecounts[t]&&!order.includes(t))];
   chip(ec,"all",null,STATE.experience==="",()=>{STATE.experience="";refreshView();buildChips();});
   tags.forEach(t=>chip(ec,EXPL[t]||cap(t),ecounts[t],STATE.experience===t,()=>{STATE.experience=STATE.experience===t?"":t;refreshView();buildChips();}));
+  const srcc=$("#sourceChips"); srcc.innerHTML="";
+  const scounts=META.source_counts||{};
+  const stags=Object.keys(scounts).filter(t=>scounts[t]).sort((a,b)=>scounts[b]-scounts[a]);
+  chip(srcc,"all",null,STATE.source==="",()=>{STATE.source="";refreshView();buildChips();});
+  stags.forEach(t=>chip(srcc,SRCL[t]||cap(t),scounts[t],STATE.source===t,()=>{STATE.source=STATE.source===t?"":t;refreshView();buildChips();}));
 }
 export function buildStats(){
   const META=store.META;

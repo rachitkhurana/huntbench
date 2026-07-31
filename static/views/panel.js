@@ -1,6 +1,6 @@
 // Right-side detail drawer + the job mutations (status/fit/notes/promote) it drives.
 import { $, el, esc } from '../lib/dom.js';
-import { STATE, store, SCOLOR, ACTC, A } from '../lib/state.js';
+import { STATE, store, SCOLOR, ACTC, A, SRCL } from '../lib/state.js';
 import { statusIcon, fitStyle, stpill } from '../lib/ui.js';
 import { api } from '../lib/api.js';
 import { toast } from '../lib/toast.js';
@@ -30,7 +30,7 @@ function renderPanel(r){
   props.innerHTML=`<div class="k">Status</div><div class="v">${stpill(r.status)}</div>`+
     `<div class="k">Fit</div><div class="v"><span class="fitb" style="${fitStyle(r.fit_score)}">${r.fit_score||"?"}</span></div>`+
     prow("Region",rl)+prow("Work mode",r.work_mode)+prow("Location",r.location)+prow("Salary",r.salary)+
-    prow("Experience",r.experience_tag)+prow("Why (fit)",r.fit_reason)+
+    prow("Experience",r.experience_tag)+prow("Source",SRCL[r.source]||r.source)+prow("Why (fit)",r.fit_reason)+
     prow("Skills",(enr.skills||[]).join(", "))+prow("Tags",(r.tags||[]).join(", "))+prow("Promoted",r.promoted_to);
   d.appendChild(props);
   if(r.url){const u=el("div");u.style.margin="8px 0";u.innerHTML=`<a href="${esc(r.url)}" target="_blank" rel="noopener">↗ open posting</a>`;d.appendChild(u);}
