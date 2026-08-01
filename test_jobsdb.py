@@ -80,6 +80,39 @@ def main():
     assert order == ["portal:greenhouse", "portal:ashby", "linkedin-search", "manual"], order  # canonical group order
     assert "source" in dashboard.SORTS
 
+    # --- deep evaluation: salary parse + rubric + flags -----------------------
+    ps = jobsdb.parse_salary
+    r = ps("$185K - $245K"); assert r["cur"] == "USD" and r["low"] == 185000 and r["high"] == 245000, r
+    r = ps("EUR 90,000-110,000"); assert r["cur"] == "EUR" and r["low"] == 90000 and r["high"] == 110000, r
+    r = ps("AED 22,500/mo"); assert r["cur"] == "AED" and r["high"] == 22500 and r["period"] == "month", r
+    r = ps("up to 160K"); assert r["low"] is None and r["high"] == 160000, r
+    r = ps("USD 130-220K base + 50-80K equity"); assert r["low"] == 130000 and r["high"] == 220000, r
+    assert ps("Competitive") is None and ps(None) is None
+
+    strong = jobsdb.normalize({
+        "id": "ev:1", "title": "Senior Frontend Engineer", "experience_tag": "senior",
+        "work_mode": "remote", "region_bucket": "europe", "salary": "$150K - $190K",
+        "enrichment": {"skills": ["React", "TypeScript", "GSAP", "CSS"],
+                       "description": "Build delightful, animated React interfaces in TypeScript. "
+                                      "Work closely with designers on a polished, high-craft product. " * 3}})
+    ev = strong["evaluation"]
+    assert ev["method"] == "heuristic", ev
+    assert ev["overall"] >= 4, ev
+    assert ev["axes"]["stack"] == 5 and ev["axes"]["location"] == 5, ev["axes"]
+    assert ev["flags"] == [], ev["flags"]          # a clean, legit posting
+
+    scam = jobsdb.normalize({
+        "id": "ev:2", "title": "Senior Software Engineer", "experience_tag": "senior", "salary": None,
+        "enrichment": {"skills": [],
+                       "description": "Great opportunity! Commission only. No experience needed. Apply now!"}})
+    fl = scam["evaluation"]["flags"]
+    for f in ("vague-jd", "commission-only", "title-mismatch"):
+        assert f in fl, (f, fl)
+
+    import evaluate
+    prompt = evaluate.build_eval_prompt(strong, {})
+    assert isinstance(prompt, str) and "TARGET JOB" in prompt and "Senior Frontend Engineer" in prompt
+
     print("test_jobsdb: OK")
 
 

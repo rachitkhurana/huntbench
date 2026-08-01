@@ -35,6 +35,8 @@ function renderPanel(r){
   d.appendChild(props);
   if(r.url){const u=el("div");u.style.margin="8px 0";u.innerHTML=`<a href="${esc(r.url)}" target="_blank" rel="noopener">↗ open posting</a>`;d.appendChild(u);}
 
+  d.appendChild(evalSection(r));
+
   d.appendChild(el("div","sec","Set status"));
   const sm=el("div","stmenu");
   store.META.statuses.forEach(s=>{const col=SCOLOR[s]||A.gray;const b=el("button","stopt"+(s===r.status?" on":""),`${statusIcon(s,11)}${s}`);
@@ -113,3 +115,39 @@ async function promote(r){
 
 // ---------- task buttons (panel-local; wraps runTask with a re-open callback) ----------
 function taskBtn(label,body,msg){const b=el("button","tbtn",label);b.onclick=()=>runTask(body,msg,()=>{if(body.id&&store.drawerId===body.id)openDetail(body.id);});return b;}
+
+// ---------- deep evaluation section (rubric + risk flags) ----------
+function verdictTag(o){return o>=4?["worth pursuing","#16a34a"]:(o===3?["marginal","#d98e26"]:["skip","#dc2626"]);}
+const EVAX=[["role","Role"],["seniority","Seniority"],["comp","Comp"],["location","Location"],["stack","Stack"]];
+function evalSection(r){
+  const wrap=el("div"); wrap.style.marginTop="4px";
+  const head=el("div","sec"); head.style.cssText="display:flex;align-items:center;gap:8px";
+  head.appendChild(el("span",null,"Evaluation"));
+  const btn=taskBtn(r.evaluation?"Re-evaluate":"Evaluate",{cmd:"evaluate",id:r.id},"Evaluating role fit + risk");
+  btn.style.cssText="margin-left:auto;padding:2px 9px;font-size:11px"; head.appendChild(btn);
+  wrap.appendChild(head);
+  const ev=r.evaluation;
+  if(!ev){wrap.appendChild(el("div",null,`<div style="color:var(--text3);font-size:12px">Not evaluated yet — click Evaluate for a deep read (role fit, comp, location, scam/ghost check).</div>`));return wrap;}
+  const [vt,vc]=verdictTag(ev.overall||3);
+  const top=el("div"); top.style.cssText="display:flex;align-items:center;gap:10px;margin:2px 0 10px";
+  top.innerHTML=`<span style="font:600 20px var(--mono,monospace);color:${vc}">${ev.overall||"–"}/5</span>`+
+    `<span style="font-size:11px;color:${vc};border:1px solid ${vc};border-radius:10px;padding:1px 8px">${esc(vt)}</span>`+
+    (ev.method==="ai"?`<span style="font-size:10px;color:var(--text3);border:1px solid var(--border,#ddd);border-radius:8px;padding:1px 6px">AI</span>`:"");
+  wrap.appendChild(top);
+  const axes=ev.axes||{};
+  EVAX.forEach(([k,label])=>{
+    const v=axes[k]; const c=v>=4?"#16a34a":(v>=3?"#d98e26":(v?"#dc2626":"var(--border,#ddd)")); const pct=v?(v/5*100):0;
+    const row=el("div"); row.style.cssText="display:flex;align-items:center;gap:8px;margin:3px 0";
+    row.innerHTML=`<span style="font-size:11px;color:var(--text2);width:66px">${label}</span>`+
+      `<span style="flex:1;height:5px;background:var(--surface2,#eee);border-radius:3px;overflow:hidden"><i style="display:block;height:100%;width:${pct}%;background:${c}"></i></span>`+
+      `<span style="font-size:11px;color:var(--text3);width:16px;text-align:right">${v||"–"}</span>`;
+    wrap.appendChild(row);
+  });
+  if((ev.flags||[]).length){
+    const fl=el("div"); fl.style.cssText="margin-top:9px;display:flex;flex-wrap:wrap;gap:5px";
+    fl.innerHTML=ev.flags.map(f=>`<span style="font-size:11px;color:#dc2626;background:rgba(220,38,38,.09);border-radius:6px;padding:2px 7px">⚠ ${esc(f)}</span>`).join("");
+    wrap.appendChild(fl);
+  }
+  if(ev.verdict){const v=el("div"); v.style.cssText="margin-top:9px;font-size:12.5px;color:var(--text2);line-height:1.5"; v.textContent=ev.verdict; wrap.appendChild(v);}
+  return wrap;
+}
