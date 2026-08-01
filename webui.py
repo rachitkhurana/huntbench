@@ -52,7 +52,7 @@ _FILE_ROOTS = [
     cvgen.MODULE_DIR,
 ]
 
-ALLOWED_TASK_CMDS = {"scan", "liveness", "cv", "tailor", "apply", "render"}
+ALLOWED_TASK_CMDS = {"scan", "liveness", "cv", "tailor", "apply", "render", "evaluate"}
 
 # ---- background task registry (long-running tools) ---------------------------
 
@@ -90,8 +90,10 @@ def _run_subprocess_task(tid, argv):
 
 def _argv_for(cmd, params):
     argv = [cmd]
-    if cmd in ("cv", "tailor", "apply", "liveness") and params.get("id"):
+    if cmd in ("cv", "tailor", "apply", "liveness", "evaluate") and params.get("id"):
         argv += ["--id", params["id"]]
+    if cmd == "evaluate":
+        argv += ["--ai"]     # the panel button always requests the deep (claude) read
     if cmd == "scan":
         for c in (params.get("companies") or []):
             argv += ["--company", c]

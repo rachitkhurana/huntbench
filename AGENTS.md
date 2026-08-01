@@ -27,14 +27,17 @@ stores and serves the results. Everything runs locally from this repo with `pyth
 ./jobsdb.py cv --id <id> [--slug foo] [--no-pdf]     # render a tailored CV + cover letter
 ./jobsdb.py tailor --id <id>           # AI-tailor the CV to the JD (uses the `claude` CLI if present)
 ./jobsdb.py apply --id <id>            # build an apply packet (CV + fields + drafted answers)
+./jobsdb.py evaluate --id <id> [--ai]  # deep-evaluate a job (rubric + scam/ghost check); --all backfills
 ./jobsdb.py activity --id <id> --kind interview --date 2026-08-15 --status interviewing
 ./jobsdb.py reset --yes [--demo]       # clear (or reseed demo) the database
 ```
 A job record is one JSON line in `jobs.ndjson`: `id, company, title, location, url, status, tags,
 fit_score, region_bucket, work_mode, experience_tag, source, salary, notes, saved, enrichment{description,skills},
-activity[]`. Statuses: `new, shortlisted, skip, applied, screening, interviewing, offer, closed, passed`.
+evaluation{overall,axes,flags,verdict}, activity[]`. Statuses: `new, shortlisted, skip, applied, screening, interviewing, offer, closed, passed`.
 `saved` is a ★ bookmark orthogonal to status (`update --save` / `--unsave`); the dashboard has a Saved view.
 `source` records how a job was added (`portal:<ats>`, `linkedin-search`, `manual`, `gmail-sync`, `demo`); the dashboard filters and sorts by it.
+`evaluation` is a multi-axis read (role/seniority/comp/location/stack, each 1–5, + risk `flags` + `overall`): a deterministic
+baseline runs on every job, and `evaluate --id <id> --ai` (or the panel's Evaluate button) deepens it with a claude scam/ghost verdict.
 
 ## Workflow 1 — Onboard a new user ("set me up")
 1. **Interview** them briefly: name, contact (email/phone/LinkedIn/portfolio), location + work
@@ -64,7 +67,10 @@ activity[]`. Statuses: `new, shortlisted, skip, applied, screening, interviewing
 ## Workflow 3 — Triage
 Open `./jobsdb.py serve` and let the user triage on the board, or drive it yourself with `list` +
 `update` (status/fit/notes). Enrich the shortlisted ones with their full JD (`enrich --attach`) so
-CV tailoring + answers are grounded.
+CV tailoring + answers are grounded. For a deeper read than `fit_score`, run
+`./jobsdb.py evaluate --id <id> --ai` (or the panel's **Evaluate** button): it scores role/seniority/comp/
+location/stack and flags likely scam/ghost/vague postings, so you only pursue — and later reach out about — jobs
+that pass. The deterministic baseline runs on every scan/add automatically; `evaluate --all` backfills existing jobs.
 
 ## Workflow 4 — Tailor a CV
 `./jobsdb.py cv --id <id>` renders from the master CV. To tailor to a JD: either run

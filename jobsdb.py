@@ -39,6 +39,7 @@ import argparse
 import datetime
 import json
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -200,6 +201,244 @@ def reason_fit(rec):
     return "; ".join(bits)
 
 
+# ---- deep evaluation (multi-axis rubric + risk flags) ------------------------
+# A richer, JD-aware read than the single fit_score heuristic: scores role /
+# seniority / comp / location / stack (each 1-5, or null when unknown), rolls up
+# an `overall`, and raises `flags` for likely scam / ghost / vague postings. The
+# deterministic baseline here runs on every job (offline, zero-token); an optional
+# claude pass (evaluate.py) deepens it on demand. A hint, not gospel.
+
+_CUR_SYMBOL = {"$": "USD", "£": "GBP", "€": "EUR", "₹": "INR",
+               "¥": "JPY"}
+_CUR_CODES = ["USD", "GBP", "EUR", "AED", "AUD", "CAD", "SGD", "INR", "JPY", "CHF"]
+_PERIOD = {"hr": "hour", "hour": "hour", "day": "day", "mo": "month",
+           "month": "month", "yr": "year", "year": "year", "annum": "year"}
+
+
+def parse_salary(s):
+    """Best-effort parse of a free-text salary string into {cur, low, high, period}.
+
+    Handles the shapes seen in real data: "$185K - $245K", "EUR 90,000-110,000",
+    "USD 130-220K base + 50-80K equity", "AED 22,500/mo", "up to 160K", "/hr". Drops
+    trailing "+ equity/bonus/…" clauses and %-tokens. Returns None if nothing parses.
+    """
+    if not s or not isinstance(s, str):
+        return None
+    txt = s.strip()
+    period = "year"
+    m = re.search(r"/\s*(hr|hour|day|mo|month|yr|year|annum)", txt, re.I)
+    if m:
+        period = _PERIOD.get(m.group(1).lower(), "year")
+    cur = None
+    for sym, code in _CUR_SYMBOL.items():
+        if sym in txt:
+            cur = code
+            break
+    if not cur:
+        m = re.search(r"\b(%s)\b" % "|".join(_CUR_CODES), txt, re.I)
+        if m:
+            cur = m.group(1).upper()
+    core = re.split(r"\+", txt)[0]              # drop "+ equity/bonus/options" tail
+    core = re.sub(r"\d[\d.,]*\s*%", "", core)   # drop equity %-tokens
+    has_k = bool(re.search(r"\d\s*[kK]\b", core)) or "k" in core.lower()
+    nums = []
+    for tok in re.findall(r"\d[\d,]*\.?\d*", core):
+        try:
+            v = float(tok.replace(",", ""))
+        except ValueError:
+            continue
+        if has_k and v < 1000:      # "185K"/"130-220K" -> thousands
+            v *= 1000
+        nums.append(v)
+    if not nums:
+        return None
+    if re.search(r"up to", txt, re.I) and len(nums) == 1:
+        low, high = None, nums[0]
+    elif len(nums) >= 2:
+        low, high = min(nums[0], nums[1]), max(nums[0], nums[1])
+    else:
+        low = high = nums[0]
+    return {"cur": cur, "low": low, "high": high, "period": period}
+
+
+def _annualize(sal):
+    if not sal or not sal.get("high"):
+        return None
+    mult = {"year": 1, "month": 12, "day": 230, "hour": 2000}
+    return sal["high"] * mult.get(sal.get("period", "year"), 1)
+
+
+def _role_axis(rec):
+    t = (rec.get("title") or "").lower()
+    tags = " ".join(rec.get("tags") or []).lower()
+    jd = ((rec.get("enrichment") or {}).get("description") or "").lower()
+    score = 3.0
+    hits = sum(1 for k in STRONG_TITLE if k in t)
+    if hits >= 1:
+        score += 1.0
+    if hits >= 2:
+        score += 0.5
+    if any(k in (t + " " + tags) for k in CREATIVE_SIGNAL):
+        score += 1.0
+    if any(k in t for k in NEGATIVE_TITLE):
+        score -= 1.5
+    if not hits and any(k in jd for k in STRONG_TITLE):   # JD-aware nudge
+        score += 0.5
+    kws = _profile_title_kws()
+    if kws and any(k in t for k in kws):
+        score += 0.5
+    return int(max(1, min(5, round(score))))
+
+
+def _seniority_axis(rec, profile):
+    exp = (rec.get("experience_tag") or "").lower()
+    t = (rec.get("title") or "").lower()
+    levels = " ".join(str(a.get("level", "")).lower()
+                      for a in ((profile or {}).get("target_roles") or {}).get("archetypes") or []
+                      if isinstance(a, dict))
+    if not levels.strip():
+        levels = "mid-senior senior staff lead"
+    if exp in ("internship", "entry", "intern"):
+        return 1
+    if exp == "associate":
+        return 2
+    lead = any(k in t for k in LEAD_KW) or exp in ("lead", "director", "principal", "10-12yr")
+    senior = exp in ("senior", "mid-senior") or "senior" in t
+    if lead and any(k in levels for k in ("lead", "staff", "principal", "director")):
+        return 5
+    if senior and any(k in levels for k in ("senior", "mid-senior")):
+        return 5
+    if senior or lead:
+        return 4
+    if exp == "mid":
+        return 3
+    return 3
+
+
+def _comp_axis(rec, sal, profile):
+    if not sal:
+        return None
+    job = _annualize(sal)
+    if not job:
+        return None
+    band = None
+    try:
+        import configlib
+        band = configlib.comp_band(profile, rec.get("region_bucket"))
+    except Exception:
+        band = None
+    if not band:
+        return 3
+    tgt = _annualize(parse_salary(band.get("target_range")))
+    mn = _annualize(parse_salary(band.get("minimum")))
+    if tgt and job >= tgt:
+        return 5
+    if mn and job >= mn:
+        return 4
+    if mn and job >= 0.8 * mn:
+        return 3
+    if mn:
+        return 2
+    return 3
+
+
+def _location_axis(rec, profile):
+    wm = rec.get("work_mode") or "unknown"
+    base = {"remote": 5, "hybrid": 4, "onsite": 3, "unknown": 3}.get(wm, 3)
+    loc = (rec.get("location") or "").lower()
+    visa = (((profile or {}).get("location") or {}).get("visa_status") or "").lower()
+    if wm in ("onsite", "hybrid") and "sponsor" in visa:
+        for country, keys in (("us", ["united states", " us", "us;", ", us", " usa"]),
+                              ("uk", ["united kingdom", " uk", "london", "england", "scotland"])):
+            if country in visa and any(k in loc for k in keys):
+                base = min(base, 2)
+    return base
+
+
+def _stack_axis(rec):
+    enr = rec.get("enrichment") or {}
+    skills = [s.lower() for s in (enr.get("skills") or [])]
+    jd = (enr.get("description") or "").lower()
+    if not skills and not jd:
+        return None
+    good = ["javascript", "typescript", "react", "next", "gsap", "three", "webgl",
+            "css", "html", "vue", "svelte", "animation", "frontend", "node", "tailwind"]
+    bad = ["php", "wordpress", ".net", "java ", "golang", " rust", "c++", "django",
+           "salesforce", "ruby on rails", "kotlin", "swift"]
+    if not skills:                       # JD-only: weaker signal
+        hits = sum(1 for k in good if k in jd)
+        return 4 if hits >= 3 else (3 if hits >= 1 else None)
+    hay = " ".join(skills)
+    score = 2 + sum(1 for k in good if k in hay) - sum(1 for k in bad if k in hay)
+    return int(max(1, min(5, score)))
+
+
+def _eval_overall(axes):
+    weights = {"role": 2.0, "seniority": 1.0, "comp": 1.0, "location": 1.0, "stack": 1.0}
+    num = den = 0.0
+    for k, w in weights.items():
+        v = axes.get(k)
+        if v is None:
+            continue
+        num += w * v
+        den += w
+    return int(max(1, min(5, round(num / den)))) if den else 3
+
+
+def _eval_flags(rec, sal):
+    flags = []
+    jd = ((rec.get("enrichment") or {}).get("description") or "")
+    jdl = jd.lower()
+    t = (rec.get("title") or "").lower()
+    # note: absent salary is NOT flagged — it's usually a scraping gap, not a red flag
+    # (the comp axis already goes null). Flags stay rare + meaningful.
+    if len(jd.strip()) < 200:
+        flags.append("vague-jd")
+    if any(k in jdl for k in ("commission only", "commission-only", "100% commission",
+                              "uncapped commission")):
+        flags.append("commission-only")
+    if any(k in jdl for k in ("unpaid", "equity only", "equity-only", "no salary")):
+        flags.append("unpaid")
+    if (any(k in jdl for k in ("no experience needed", "no experience required", "entry level"))
+            and any(k in t for k in ("senior", "staff", "principal", "lead"))):
+        flags.append("title-mismatch")
+    ann = _annualize(sal)
+    if ann and sal.get("period") == "year" and ann < 25000 \
+            and any(k in t for k in ("senior", "staff", "principal", "lead")):
+        flags.append("comp-lowball")
+    dp = rec.get("date_posted")
+    if dp:
+        try:
+            d = datetime.date.fromisoformat(str(dp)[:10])
+            if (datetime.date.fromisoformat(TODAY) - d).days > 60:
+                flags.append("stale-posting")
+        except Exception:
+            pass
+    return flags
+
+
+def evaluate_job(rec, profile=None):
+    """Deterministic multi-axis evaluation of a job record (method='heuristic')."""
+    if profile is None:
+        profile = _profile()
+    sal = parse_salary(rec.get("salary"))
+    axes = {
+        "role": _role_axis(rec),
+        "seniority": _seniority_axis(rec, profile),
+        "comp": _comp_axis(rec, sal, profile),
+        "location": _location_axis(rec, profile),
+        "stack": _stack_axis(rec),
+    }
+    return {
+        "overall": _eval_overall(axes),
+        "axes": axes,
+        "flags": _eval_flags(rec, sal),
+        "verdict": "",
+        "method": "heuristic",
+        "evaluated_at": TODAY,
+    }
+
+
 # ---- record normalization ----------------------------------------------------
 
 def normalize(raw):
@@ -231,6 +470,7 @@ def normalize(raw):
     rec.setdefault("enriched", False)
     rec.setdefault("enrichment", None)
     rec.setdefault("promoted_to", None)
+    rec.setdefault("evaluation", None)
     rec["saved"] = bool(rec.get("saved"))
     rec.setdefault("created", TODAY)
     rec["updated"] = rec.get("updated") or TODAY
@@ -238,6 +478,8 @@ def normalize(raw):
         rec["fit_score"] = score_fit(rec)
     if not rec.get("fit_reason"):
         rec["fit_reason"] = reason_fit(rec)
+    if not rec.get("evaluation"):
+        rec["evaluation"] = evaluate_job(rec)
     return rec
 
 
@@ -310,7 +552,7 @@ def index_by_id(records):
 # 'applied' job back to 'new', wipe a fit rating, notes, or the activity log.
 USER_STATE_FIELDS = frozenset({
     "status", "fit_score", "fit_reason", "notes", "activity",
-    "promoted_to", "enriched", "enrichment", "date_found", "saved",
+    "promoted_to", "enriched", "enrichment", "date_found", "saved", "evaluation",
 })
 
 
@@ -892,6 +1134,11 @@ def cmd_apply(args):
     sys.exit(apply.run(args))
 
 
+def cmd_evaluate(args):
+    import evaluate
+    sys.exit(evaluate.run(args))
+
+
 def cmd_serve(args):
     import webui
     sys.exit(webui.run(args))
@@ -1119,6 +1366,14 @@ def build_parser():
     sp.add_argument("--no-pdf", dest="no_pdf", action="store_true")
     sp.add_argument("--no-letter", dest="no_letter", action="store_true")
     sp.set_defaults(func=cmd_tailor)
+
+    sp = sub.add_parser("evaluate", help="deep-evaluate a job (rubric + scam/ghost check); --ai for a claude read")
+    sp.add_argument("--id", help="evaluate one job by id")
+    sp.add_argument("--all", action="store_true", help="(re)evaluate jobs lacking an evaluation")
+    sp.add_argument("--ai", action="store_true", help="use the claude CLI for a nuanced read + verdict")
+    sp.add_argument("--force", action="store_true", help="with --all, recompute even if already evaluated")
+    sp.add_argument("--model", help="claude model (default: your Claude Code default)")
+    sp.set_defaults(func=cmd_evaluate)
 
     sp = sub.add_parser("apply", help="build an apply packet (CV + mapped fields + drafted answers)")
     sp.add_argument("--id", required=True)
