@@ -38,6 +38,7 @@ Commands:
 import argparse
 import datetime
 import json
+import math
 import os
 import re
 import sys
@@ -500,6 +501,38 @@ def add_activity(rec, entry):
     return e
 
 
+# A status change into a funnel stage is a dated act of effort — but the funnel
+# state alone carries no date, so streak/heatmap/growth have nothing to read.
+# log_status_activity closes that gap: it stamps a dated activity when status
+# advances, mapping each funnel status to the matching activity kind.
+STATUS_ACTIVITY_KIND = {
+    "applied": "applied", "screening": "screening", "interviewing": "interview",
+    "offer": "offer", "closed": "reject", "passed": "reject",
+}
+_STATUS_ACTIVITY_TITLE = {
+    "applied": "Applied", "screening": "Screening call", "interviewing": "Interview",
+    "offer": "Offer", "closed": "Closed out", "passed": "Passed",
+}
+
+
+def log_status_activity(rec, old, new, today=None):
+    """Auto-append a dated activity when a job's status changes into a funnel stage.
+
+    Idempotent: does nothing if `new` isn't a funnel status, if it equals `old`, or
+    if a same-day + same-kind entry already exists (so re-saving a status, or logging
+    an interview then setting status=interviewing, never double-counts). `today` is a
+    parameter for deterministic tests. Returns the appended entry, or None."""
+    day = today or TODAY
+    kind = STATUS_ACTIVITY_KIND.get(new)
+    if not kind or new == old:
+        return None
+    for a in (rec.get("activity") or []):
+        if a.get("kind") == kind and a.get("date") == day:
+            return None
+    return add_activity(rec, {"date": day, "kind": kind, "source": "auto",
+                              "title": _STATUS_ACTIVITY_TITLE.get(new, "")})
+
+
 # ---- storage -----------------------------------------------------------------
 
 DEMO_PATH = os.path.join(HERE, "examples", "demo-jobs.ndjson")
@@ -720,6 +753,189 @@ def source_counts(records):
     return counts
 
 
+# ---- momentum: effort stream -> streak / heatmap / growth --------------------
+# Pure derivations over the existing data (activity[] + funnel status + AI evals).
+# `today` is always a parameter so tests are deterministic. Reward the *inputs* the
+# user controls (apply / reach out / evaluate); outcomes (interview/offer) add bonus
+# growth AND drive blossoms/fruit, but never subtract. Rejections cost nothing — a
+# logged 'reject' still counts as an action that keeps the streak/heatmap alive.
+
+# Relative weight of each effort signal toward tree growth. Applications are the
+# heaviest controllable action; outreach/eval/tailor add less; a logged rejection
+# barely moves growth but still registers as activity for the streak.
+EFFORT_WEIGHT = {
+    "applied": 5.0, "interview": 3.0, "offer": 3.0, "screening": 2.0,
+    "email": 1.5, "evaluation": 1.0, "tailor": 1.0, "note": 0.5, "reject": 0.5,
+}
+# Statuses that mean the user actually pursued the job (past the triage stage).
+FUNNEL_REACHED = frozenset({"applied", "screening", "interviewing", "offer",
+                            "closed", "passed"})
+# Soft-saturation constant: growth = 1 - exp(-points / K). Larger K => slower to
+# mature (never caps at 1). Tuned so a handful of applications already reads as real
+# progress; the standalone prototype tunes the *feel*, real weights land here later.
+GROWTH_K = 45.0
+# Continuous growth fraction (0..1) -> discrete tree stage. Log-scaled upstream, so
+# early actions move the needle a lot and it never fully caps out.
+GROWTH_STAGES = ((0.02, "seed"), (0.15, "sprout"), (0.35, "seedling"),
+                 (0.60, "sapling"), (0.85, "young"), (1.01, "mature"))
+
+
+def _iso(d):
+    """First 10 chars of a date-ish value as an ISO day, or None."""
+    s = str(d or "")[:10]
+    return s if len(s) == 10 else None
+
+
+def effort_events(records):
+    """Every dated act of effort across the DB as {date, kind, weight, id}, for the
+    heatmap + streak. Sources: activity[] entries (any kind) and deliberate AI
+    evaluations (the auto heuristic eval on ingest is NOT effort). Real logged signals
+    only — historical funnel state with no dated activity simply doesn't backfill old
+    days; growth (below) still reflects it immediately."""
+    out = []
+    for r in records:
+        rid = r.get("id")
+        for a in (r.get("activity") or []):
+            day = _iso(a.get("date"))
+            if not day:
+                continue
+            kind = a.get("kind") or "note"
+            out.append({"date": day, "kind": kind,
+                        "weight": EFFORT_WEIGHT.get(kind, 0.5), "id": rid})
+        ev = r.get("evaluation") or {}
+        if ev.get("method") == "ai":
+            day = _iso(ev.get("evaluated_at"))
+            if day:
+                out.append({"date": day, "kind": "evaluation",
+                            "weight": EFFORT_WEIGHT["evaluation"], "id": rid})
+    return out
+
+
+def daily_activity_counts(records, days=None, today=None):
+    """{ 'YYYY-MM-DD': n } action counts per day (powers the GitHub-style heatmap).
+    With `days`, restrict to the trailing window ending `today`. Callers fill the
+    zero-days for the grid; this only reports days that actually saw activity."""
+    counts = {}
+    lo = None
+    if days:
+        end = datetime.date.fromisoformat(today or TODAY)
+        lo = (end - datetime.timedelta(days=days - 1)).isoformat()
+        hi = end.isoformat()
+    for e in effort_events(records):
+        d = e["date"]
+        if lo is not None and (d < lo or d > hi):
+            continue
+        counts[d] = counts.get(d, 0) + 1
+    return counts
+
+
+def compute_streak(events, today=None, rest_budget=1):
+    """Forgiving current streak: consecutive active days ending at/near `today`.
+
+    Rules that keep it kind, never punishing:
+    - Any day with >=1 action is 'active'.
+    - `today` not yet worked doesn't break anything (it may just be early) — a grace
+      day that neither counts nor costs.
+    - Between active days you may miss up to `rest_budget` day(s) without breaking the
+      streak (a 'rest token', replenished on each active day). Missed rest days don't
+      add to the count. Exhaust the budget on an inactive day and the streak ends.
+
+    `events` may be effort_events dicts or bare date strings. Returns an int."""
+    day = datetime.date.fromisoformat(today or TODAY)
+    active = {(_iso(e["date"]) if isinstance(e, dict) else _iso(e)) for e in events}
+    active.discard(None)
+    streak, rest, cur, first = 0, rest_budget, day, True
+    while True:
+        iso = cur.isoformat()
+        if iso in active:
+            streak += 1
+            rest = rest_budget            # each active day replenishes the rest token
+        elif first:
+            pass                          # grace: today simply isn't worked yet
+        elif rest > 0:
+            rest -= 1                     # spend a rest token to bridge a quiet day
+        else:
+            break
+        first = False
+        cur -= datetime.timedelta(days=1)
+        if (day - cur).days > 3660:       # ~10yr safety bound
+            break
+    return streak
+
+
+def growth_points(records):
+    """Deduped, date-free tally of controllable effort -> raw growth points. Reflects
+    current state immediately (a job already at 'applied' counts even with no logged
+    activity), while not double-counting an explicit 'applied' activity against the
+    status it mirrors. Outreach/interviews add per-occurrence; a deliberate AI eval
+    adds a little. Outcomes add bonus growth but the tree never shrinks."""
+    pts = 0.0
+    for r in records:
+        acts = r.get("activity") or []
+        kinds = [a.get("kind") for a in acts]
+        status = r.get("status")
+        if status in FUNNEL_REACHED or "applied" in kinds or r.get("promoted_to"):
+            pts += EFFORT_WEIGHT["applied"]
+        pts += EFFORT_WEIGHT["email"] * sum(1 for k in kinds if k == "email")
+        n_int = sum(1 for k in kinds if k == "interview")
+        if status == "interviewing" and n_int == 0:
+            n_int = 1                     # reached interview but not yet logged one
+        pts += EFFORT_WEIGHT["interview"] * n_int
+        if status == "screening" or "screening" in kinds:
+            pts += EFFORT_WEIGHT["screening"]
+        if status == "offer" or "offer" in kinds:
+            pts += EFFORT_WEIGHT["offer"]
+        if (r.get("evaluation") or {}).get("method") == "ai":
+            pts += EFFORT_WEIGHT["evaluation"]
+    return pts
+
+
+def growth_stage(growth):
+    """Continuous growth fraction (0..1) -> discrete tree stage name."""
+    for thresh, name in GROWTH_STAGES:
+        if growth < thresh:
+            return name
+    return "mature"
+
+
+def growth_state(records, today=None):
+    """The full tree state derived from the DB: {points, growth (0..1), stage,
+    blossoms, fruit, mood, recent_actions, planted_at}. blossoms = interviews,
+    fruit = offers. mood/lushness follows the last ~14 days of activity and is never
+    'dead' — a quiet stretch just rests the tree."""
+    day = today or TODAY
+    pts = growth_points(records)
+    growth = 1.0 - math.exp(-pts / GROWTH_K) if pts > 0 else 0.0
+    blossoms = fruit = 0
+    for r in records:
+        kinds = [a.get("kind") for a in (r.get("activity") or [])]
+        n_int = sum(1 for k in kinds if k == "interview")
+        if r.get("status") == "interviewing" and n_int == 0:
+            n_int = 1
+        blossoms += n_int
+        if r.get("status") == "offer" or "offer" in kinds:
+            fruit += 1
+    end = datetime.date.fromisoformat(day)
+    recent = 0
+    for e in effort_events(records):
+        try:
+            gap = (end - datetime.date.fromisoformat(e["date"])).days
+        except ValueError:
+            continue
+        if 0 <= gap <= 13:
+            recent += 1
+    mood = ("lush" if recent >= 6 else "steady" if recent >= 2
+            else "calm" if recent >= 1 else "resting")
+    planted = [p for p in (_iso(r.get("created")) or _iso(r.get("date_found"))
+                           for r in records) if p]
+    return {
+        "points": round(pts, 1), "growth": round(growth, 4),
+        "stage": growth_stage(growth), "blossoms": blossoms, "fruit": fruit,
+        "mood": mood, "recent_actions": recent,
+        "planted_at": min(planted) if planted else day,
+    }
+
+
 def frontmatter(title, ntype, tags):
     return "> Generated by `./jobsdb.py render` on %s — do not hand-edit.\n" % TODAY
 
@@ -932,7 +1148,9 @@ def cmd_update(args):
     if args.status:
         if args.status not in STATUSES:
             sys.exit("update: bad status; choose from %s" % ", ".join(STATUSES))
+        old = rec.get("status")
         rec["status"] = args.status
+        log_status_activity(rec, old, args.status)
     if args.fit is not None:
         rec["fit_score"] = max(1, min(5, args.fit))
     if args.notes is not None:
@@ -1051,7 +1269,9 @@ def build_opportunity_scaffold(rec, slug, status=None):
     path = "output/%s/%s.md" % (slug, slug)
     rec["promoted_to"] = path
     if rec.get("status") in ("new", "shortlisted", "skip"):
+        old = rec.get("status")
         rec["status"] = status or "applied"
+        log_status_activity(rec, old, rec["status"])
     rec["updated"] = TODAY
     fm = (
         "# %s — %s\n\n"
@@ -1231,7 +1451,9 @@ def cmd_activity(args):
     if args.status:
         if args.status not in STATUSES:
             sys.exit("activity: bad status; choose from %s" % ", ".join(STATUSES))
+        old = rec.get("status")
         rec["status"] = args.status
+        log_status_activity(rec, old, args.status)
     rec["updated"] = TODAY
     save_db(db)
     print("activity: %s += [%s] %s (%s)%s" % (

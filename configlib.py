@@ -185,6 +185,23 @@ def profile_keywords(profile):
     return [w.lower() for w in words if w]
 
 
+# Momentum goals — a self-set, forgiving daily target + rest allowance for the streak.
+# Defaults are deliberately gentle (quality over volume; never punishing).
+_DEFAULT_GOALS = {"daily_actions": 3, "rest_allowance": 1}
+
+
+def goals(profile):
+    """The resolved {daily_actions, rest_allowance} from the profile's optional
+    `goals:` block, falling back to gentle defaults. Non-negative ints only."""
+    g = (profile or {}).get("goals") or {}
+    out = dict(_DEFAULT_GOALS)
+    for k in out:
+        v = g.get(k)
+        if isinstance(v, int) and not isinstance(v, bool) and v >= 0:
+            out[k] = v
+    return out
+
+
 # ---- self-test ---------------------------------------------------------------
 
 def selftest():

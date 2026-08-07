@@ -140,7 +140,9 @@ def apply_update(records, jid, changes):
     if not rec:
         return None
     if changes.get("status") in jobsdb.STATUSES:
+        old = rec.get("status")
         rec["status"] = changes["status"]
+        jobsdb.log_status_activity(rec, old, changes["status"])
     if changes.get("fit") not in (None, ""):
         try:
             f = int(changes["fit"])
@@ -355,6 +357,34 @@ def meta_payload():
     }
 
 
+def momentum_payload(since=None):
+    """Everything the Home page needs: the derived tree state, the daily-action
+    heatmap counts, the forgiving streak, today's goal + progress, and how many jobs
+    turned up since the client's last visit (`since` = an ISO date/datetime)."""
+    import configlib
+    db = jobsdb.load_db()
+    today = jobsdb.TODAY
+    prof, _ = configlib.load_profile()
+    g = configlib.goals(prof)
+    events = jobsdb.effort_events(db)
+    counts = jobsdb.daily_activity_counts(db, today=today)
+    streak = jobsdb.compute_streak(events, today=today, rest_budget=g["rest_allowance"])
+    done = counts.get(today, 0)
+    new_since = 0
+    if since:
+        cutoff = str(since)[:10]
+        new_since = sum(1 for r in db if (r.get("date_found") or "") > cutoff)
+    return {
+        "growth": jobsdb.growth_state(db, today=today),
+        "daily_counts": counts,
+        "streak": streak,
+        "goal": {"target": g["daily_actions"], "done": done,
+                 "met": done >= g["daily_actions"]},
+        "new_since": new_since,
+        "today": today,
+    }
+
+
 # ---- HTTP handler ------------------------------------------------------------
 
 class Handler(BaseHTTPRequestHandler):
@@ -450,6 +480,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, {"rev": "none"})
             if path == "/api/meta":
                 return self._send(200, meta_payload())
+            if path == "/api/momentum":
+                return self._send(200, momentum_payload((q.get("since") or [None])[0]))
             if path == "/api/interviews":
                 return self._send(200, interviews_payload())
             if path == "/api/activity":
@@ -531,7 +563,9 @@ class Handler(BaseHTTPRequestHandler):
                     ("date", "kind", "title", "detail", "contact", "link", "thread_id", "source")})
                 st = body.get("status")
                 if st and st in jobsdb.STATUSES:
+                    old = rec.get("status")
                     rec["status"] = st
+                    jobsdb.log_status_activity(rec, old, st)
                 rec["updated"] = jobsdb.TODAY
                 jobsdb.save_db(db)
                 return self._send(200, {"record": rec})
