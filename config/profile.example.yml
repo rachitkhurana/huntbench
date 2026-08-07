@@ -60,3 +60,9 @@ location:
   timezone: "CET (UTC+1)"
   visa_status: "EU work authorization; would need sponsorship for US/UK."
   onsite_availability: "Berlin on-site easy; remote welcome; relocation possible."
+
+# Momentum — the forgiving daily habit that grows your bonsai on the Home page.
+# Reward the effort you control (applying, reaching out, evaluating), not outcomes.
+goals:
+  daily_actions: 3      # a gentle daily target; hitting it keeps the streak alive
+  rest_allowance: 1     # quiet days you can take between active days without breaking the streak
