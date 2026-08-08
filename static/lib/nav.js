@@ -15,10 +15,10 @@ export function refreshView(){
 export function setView(v){
   STATE.view=v; localStorage.setItem("v2view",v);
   document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("on",n.dataset.view===v));
-  $("#vtitle").textContent={list:"All jobs",saved:"Saved",board:"Board",inbox:"Inbox",profile:"Profile"}[v];
+  $("#vtitle").textContent={home:"Home",list:"All jobs",saved:"Saved",board:"Board",inbox:"Inbox",profile:"Profile"}[v];
   document.querySelectorAll('.seclabel[data-sec="status"],.chips[data-sec="status"]').forEach(e=>e.style.display=(v==="list")?"":"none");
-  $("#sort").style.display=(v==="inbox"||v==="profile")?"none":"";
-  $("#q").style.display=(v==="profile")?"none":"";
+  $("#sort").style.display=(v==="inbox"||v==="profile"||v==="home")?"none":"";
+  $("#q").style.display=(v==="profile"||v==="home")?"none":"";
   $("#listmode-seg").style.display=(v==="list"||v==="saved")?"":"none";   // List|Cards toggle: All jobs + Saved
   refreshView();
 }

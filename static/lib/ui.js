@@ -9,8 +9,19 @@ export function statusIcon(s,size){
     (frac>0?`<circle cx="7" cy="7" r="5" fill="none" stroke="${col}" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="${(frac*c).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 7 7)"/>`:"")+
     (frac>=1?`<circle cx="7" cy="7" r="2.1" fill="${col}"/>`:"")+`</svg>`;
 }
+// Generic progress ring (the statusIcon arc math, freed from status/PROG): an
+// arbitrary fraction in an arbitrary colour. Used by the Home goal ring.
+export function ring(frac,color,size){
+  size=size||14; color=color||"#4f7d4a"; frac=Math.max(0,Math.min(1,frac||0));
+  const r=5, c=2*Math.PI*r;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 14 14" style="display:block">`+
+    `<circle cx="7" cy="7" r="5" fill="none" stroke="${color}" stroke-opacity=".18" stroke-width="1.6"/>`+
+    (frac>0?`<circle cx="7" cy="7" r="5" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="${(frac*c).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 7 7)"/>`:"")+
+    `</svg>`;
+}
 export function fitStyle(f){const c=FITC[f]||"#9ca3af";return `color:${c};background:${c}1e`;}
 export function icon(name){const p={
+  home:'<path d="M2.6 7.3L8 2.8l5.4 4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 6.6V13h8V6.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>',
   list:'<path d="M2 4h12M2 8h12M2 12h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
   board:'<rect x="2" y="2.5" width="4" height="11" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="10" y="2.5" width="4" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/>',
   inbox:'<path d="M2 3.5h12v9H2z" stroke="currentColor" stroke-width="1.3"/><path d="M2 9h3l1 2h4l1-2h3" stroke="currentColor" stroke-width="1.3" fill="none"/>',

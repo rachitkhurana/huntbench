@@ -8,14 +8,14 @@
 <meta property="og:title" content="Huntbench — Your job hunt, as mission control" />
 <meta property="og:description" content="A local, agent-native job-search command center. Zero install, zero API keys, your data stays on your machine." />
 <meta property="og:type" content="website" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%235e6ad2'/%3E%3Ctext x='50' y='72' font-size='64' font-family='system-ui,sans-serif' font-weight='700' fill='white' text-anchor='middle'%3Eh%3C/text%3E%3C/svg%3E" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%234f7d4a'/%3E%3Ctext x='50' y='72' font-size='64' font-family='system-ui,sans-serif' font-weight='700' fill='white' text-anchor='middle'%3Eh%3C/text%3E%3C/svg%3E" />
 <style>
+  /* Self-hosted Geist (OFL) — vendored into docs/fonts, no CDN. */
+  @font-face{font-family:'Geist';src:url('fonts/Geist-Variable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
+  @font-face{font-family:'Geist Mono';src:url('fonts/GeistMono-Variable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
   :root {
-    --bg: #ffffff;
-    --bg-soft: #fbfbfd;
+    --bg: #fdfdfb;
+    --bg-soft: #fbfbf6;
     --bg-panel: #f7f8fa;
     --ink: #0d0e10;
     --ink-2: #3c4149;
@@ -23,14 +23,14 @@
     --muted-2: #8a8f98;
     --line: #ebedf0;
     --line-2: #e2e4e9;
-    --accent: #5e6ad2;
-    --accent-ink: #4a55c5;
-    --accent-soft: #eef0fb;
+    --accent: #4f7d4a;
+    --accent-ink: #416a3d;
+    --accent-soft: #edf3e9;
     --radius: 14px;
     --radius-lg: 20px;
     --shadow-sm: 0 1px 2px rgba(13,14,16,.04), 0 1px 3px rgba(13,14,16,.06);
     --shadow-md: 0 10px 30px -12px rgba(13,14,16,.18), 0 4px 12px -6px rgba(13,14,16,.08);
-    --shadow-lg: 0 40px 80px -28px rgba(45,50,110,.30), 0 12px 32px -12px rgba(13,14,16,.12);
+    --shadow-lg: 0 40px 80px -28px rgba(40,50,30,.30), 0 12px 32px -12px rgba(13,14,16,.12);
     --maxw: 1120px;
     --ease: cubic-bezier(.16,.84,.44,1);
   }
@@ -38,7 +38,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Geist', system-ui, -apple-system, sans-serif;
     background: var(--bg);
     color: var(--ink);
     line-height: 1.55;
@@ -48,7 +48,7 @@
   }
   a { color: inherit; text-decoration: none; }
   img { max-width: 100%; display: block; }
-  ::selection { background: rgba(94,106,210,.18); }
+  ::selection { background: rgba(79,125,74,.18); }
 
   .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
 
@@ -68,10 +68,10 @@
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 15px; letter-spacing: -.01em; }
   .brand .mark {
     width: 26px; height: 26px; border-radius: 8px;
-    background: linear-gradient(155deg, #7d87e6, #5e6ad2);
+    background: linear-gradient(155deg, #6d9138, #4f7d4a);
     color: #fff; display: grid; place-items: center;
     font-weight: 700; font-size: 15px;
-    box-shadow: 0 2px 8px -1px rgba(94,106,210,.5);
+    box-shadow: 0 2px 8px -1px rgba(79,125,74,.5);
   }
   .nav-links { display: flex; align-items: center; gap: 6px; }
   .nav-links a.link { color: var(--muted); font-size: 14px; font-weight: 500; padding: 8px 12px; border-radius: 8px; transition: color .2s, background .2s; }
@@ -83,8 +83,8 @@
     border: 1px solid transparent; transition: all .2s var(--ease); white-space: nowrap;
   }
   .btn svg { width: 15px; height: 15px; }
-  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 1px 2px rgba(74,85,197,.4), inset 0 1px 0 rgba(255,255,255,.14); }
-  .btn-primary:hover { background: var(--accent-ink); transform: translateY(-1px); box-shadow: 0 6px 16px -4px rgba(74,85,197,.5); }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 1px 2px rgba(65,106,61,.4), inset 0 1px 0 rgba(255,255,255,.14); }
+  .btn-primary:hover { background: var(--accent-ink); transform: translateY(-1px); box-shadow: 0 6px 16px -4px rgba(65,106,61,.5); }
   .btn-ghost { background: var(--bg); color: var(--ink); border-color: var(--line-2); box-shadow: var(--shadow-sm); }
   .btn-ghost:hover { border-color: #d3d6dd; transform: translateY(-1px); box-shadow: var(--shadow-md); }
   .btn-sm { padding: 7px 13px; font-size: 13.5px; }
@@ -96,9 +96,9 @@
     left: 50%; top: -80px; transform: translateX(-50%);
     width: 1100px; height: 720px;
     background:
-      radial-gradient(46% 40% at 50% 32%, rgba(94,106,210,.20), transparent 70%),
-      radial-gradient(30% 26% at 30% 20%, rgba(139,147,232,.20), transparent 70%),
-      radial-gradient(30% 26% at 72% 24%, rgba(180,160,240,.16), transparent 70%);
+      radial-gradient(46% 40% at 50% 32%, rgba(79,125,74,.20), transparent 70%),
+      radial-gradient(30% 26% at 30% 20%, rgba(120,150,80,.20), transparent 70%),
+      radial-gradient(30% 26% at 72% 24%, rgba(150,175,110,.16), transparent 70%);
     filter: blur(8px);
   }
   .hero-grid {
@@ -127,7 +127,7 @@
     color: var(--ink); margin: 0 auto 22px; max-width: 15ch;
   }
   h1 .grad {
-    background: linear-gradient(110deg, #5e6ad2 10%, #8b70e0 55%, #b06ad0 100%);
+    background: linear-gradient(110deg, #4f7d4a 10%, #6d9138 55%, #8ca35b 100%);
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
   }
   .sub {
@@ -140,12 +140,12 @@
   .clone {
     display: inline-flex; align-items: center; gap: 12px;
     background: #0d0e10; color: #e9eaee; border-radius: 11px;
-    padding: 10px 10px 10px 18px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px;
+    padding: 10px 10px 10px 18px; font-family: 'Geist Mono', monospace; font-size: 13.5px;
     box-shadow: var(--shadow-md); border: 1px solid #2a2c31;
   }
   .clone .dollar { color: #6b7280; }
   .clone code { color: #e9eaee; }
-  .clone .accent { color: #a9b0ff; }
+  .clone .accent { color: #a9c98f; }
   .copy-btn {
     display: inline-grid; place-items: center; width: 30px; height: 30px;
     border-radius: 7px; background: #1c1e22; border: 1px solid #34363c; cursor: pointer;
@@ -179,12 +179,12 @@
     flex: 1; max-width: 340px; margin: 0 auto; height: 24px;
     background: #fff; border: 1px solid var(--line-2); border-radius: 7px;
     display: flex; align-items: center; justify-content: center; gap: 7px;
-    font-size: 12px; color: var(--muted-2); font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--muted-2); font-family: 'Geist Mono', monospace;
   }
   .browser .url svg { width: 11px; height: 11px; opacity: .7; }
   .browser .body { background: #fff; }
   .browser .body img { width: 100%; height: auto; display: block; }
-  .hero-shot .browser { box-shadow: 0 60px 120px -40px rgba(45,50,110,.42), 0 24px 60px -24px rgba(13,14,16,.16); }
+  .hero-shot .browser { box-shadow: 0 60px 120px -40px rgba(40,50,30,.42), 0 24px 60px -24px rgba(13,14,16,.16); }
 
   /* ---------- Sections ---------- */
   section { position: relative; padding: 92px 0; }
@@ -215,7 +215,7 @@
   .step h3 { font-size: 17px; font-weight: 640; letter-spacing: -.02em; margin-bottom: 8px; }
   .step p { color: var(--muted); font-size: 14.5px; line-height: 1.6; }
   .step code, .inline-code {
-    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    font-family: 'Geist Mono', monospace; font-size: 12.5px;
     background: var(--bg-panel); border: 1px solid var(--line); color: var(--accent-ink);
     padding: 1px 6px; border-radius: 5px;
   }
@@ -264,11 +264,11 @@
   .terminal .tbar { display: flex; align-items: center; gap: 7px; padding: 12px 15px; border-bottom: 1px solid #22242a; }
   .terminal .tbar i { width: 11px; height: 11px; border-radius: 50%; }
   .terminal .tbar i:nth-child(1){ background:#ff5f57; } .terminal .tbar i:nth-child(2){ background:#febc2e; } .terminal .tbar i:nth-child(3){ background:#28c840; }
-  .terminal .tbar span { margin-left: 8px; font-size: 12px; color: #6b7280; font-family: 'JetBrains Mono', monospace; }
-  .terminal pre { padding: 20px 22px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.85; color: #d7dae0; }
+  .terminal .tbar span { margin-left: 8px; font-size: 12px; color: #6b7280; font-family: 'Geist Mono', monospace; }
+  .terminal pre { padding: 20px 22px; overflow-x: auto; font-family: 'Geist Mono', monospace; font-size: 13px; line-height: 1.85; color: #d7dae0; }
   .terminal .c { color: #6b7280; }
   .terminal .p { color: #5fbf8b; }
-  .terminal .a { color: #a9b0ff; }
+  .terminal .a { color: #a9c98f; }
   .qs-copy h2 { margin-bottom: 18px; }
   .qs-copy p { color: var(--muted); font-size: 16px; line-height: 1.65; margin-bottom: 16px; }
   .qs-req { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
@@ -283,9 +283,9 @@
   .cta-band { text-align: center; }
   .cta-card {
     position: relative; overflow: hidden;
-    background: linear-gradient(145deg, #5e6ad2, #4a55c5 55%, #6f5fd0);
+    background: linear-gradient(145deg, #4f7d4a, #416a3d 55%, #6d9138);
     border-radius: 26px; padding: 66px 32px;
-    box-shadow: 0 40px 90px -30px rgba(74,85,197,.55);
+    box-shadow: 0 40px 90px -30px rgba(65,106,61,.55);
   }
   .cta-card::before {
     content: ""; position: absolute; inset: 0;
@@ -621,7 +621,7 @@
 <!-- FOOTER -->
 <footer>
   <div class="wrap">
-    <div class="fbrand"><span class="mark" style="width:24px;height:24px;border-radius:7px;font-size:14px;display:grid;place-items:center;background:linear-gradient(155deg,#7d87e6,#5e6ad2);color:#fff;">h</span> Huntbench</div>
+    <div class="fbrand"><span class="mark" style="width:24px;height:24px;border-radius:7px;font-size:14px;display:grid;place-items:center;background:linear-gradient(155deg,#6d9138,#4f7d4a);color:#fff;">h</span> Huntbench</div>
     <div class="flinks">
       <a href="https://github.com/rachitkhurana/huntbench" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/rachitkhurana/huntbench/blob/main/AGENTS.md" target="_blank" rel="noopener">Agent playbook</a>
