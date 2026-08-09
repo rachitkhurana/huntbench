@@ -215,8 +215,8 @@ select.tbtn{-webkit-appearance:none;appearance:none;padding-right:22px;
   display:inline-flex;align-items:center;justify-content:center;transition:background .12s}
 .iconbtn:hover{background:var(--hover)}
 .panelbody{flex:1;overflow-y:auto;padding:20px 22px}
-.p-co{font-size:19px;font-weight:600;letter-spacing:-.01em}
-.p-ti{font-size:14px;color:var(--text2);margin-bottom:14px}
+.p-co{font-size:21px;font-weight:700;letter-spacing:-.02em}
+.p-ti{font-size:14px;color:var(--text2);margin-bottom:6px}
 .p-head{display:flex;align-items:flex-start;gap:10px}
 .p-titles{flex:1;min-width:0}
 .p-head .star{margin-top:2px}
@@ -244,6 +244,44 @@ textarea:focus{border-color:var(--accent)}
 .logform{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#fbfbfa;border:1px solid var(--border);border-radius:var(--r);padding:9px;margin-bottom:10px}
 .logform input,.logform select{font-size:12px;padding:5px 7px;border:1px solid var(--border);border-radius:5px;outline:none}
 .banner{background:var(--tint);border:1px solid rgba(79,125,74,.32);border-radius:var(--r);padding:11px 14px;margin-bottom:16px;font-size:12.5px;line-height:1.6;max-width:900px}
+
+/* --- redesigned drawer: primary CTA, chip pickers, file tiles --- */
+.btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:38px;padding:0 18px;
+  border-radius:var(--r);border:1px solid var(--accent);background:var(--accent);color:#fff;font:500 13px var(--mono);
+  cursor:pointer;transition:background .12s,box-shadow .12s;box-shadow:0 1px 2px rgba(79,125,74,.28)}
+.btn-primary:hover{background:var(--accent-h)}
+.btn-primary.block{width:100%}
+.btn-primary.dim{background:var(--sidebar);border-color:var(--border);color:var(--text3);box-shadow:none;cursor:not-allowed}
+
+/* controls row: status + fit chip-pickers + promote */
+.p-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 16px}
+.chip-select{position:relative;display:inline-flex}
+.cs-trig{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px;border:1px solid var(--border);
+  border-radius:20px;background:#fff;color:var(--text2);font:12px var(--mono);cursor:pointer;transition:all .12s}
+.cs-trig:hover{border-color:var(--border-2);background:var(--hover)}
+.cs-lab{color:var(--text3);font-size:11px}
+.cs-chev{opacity:.45;margin-left:1px}
+.menu{position:absolute;top:calc(100% + 5px);left:0;z-index:6;min-width:172px;background:#fff;
+  border:1px solid var(--border-2);border-radius:9px;box-shadow:var(--sh-lg);padding:5px}
+.menuitem{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:6px;font-size:12.5px;
+  color:var(--text2);cursor:pointer;transition:background .1s}
+.menuitem:hover{background:var(--hover);color:var(--text)}
+.menuitem.on{background:var(--sel);color:var(--text);font-weight:500}
+
+/* prep/apply tools row */
+.p-tools{display:flex;flex-wrap:wrap;gap:7px}
+
+/* artifacts as file tiles */
+.filetiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.filetile{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;
+  background:#fff;box-shadow:var(--sh);text-decoration:none;transition:border-color .12s,box-shadow .12s,transform .12s}
+.filetile:hover{border-color:var(--border-2);transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.ft-badge{flex:0 0 auto;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font:700 9.5px var(--mono);letter-spacing:.3px;color:#fff}
+.ft-meta{min-width:0;display:flex;flex-direction:column}
+.ft-name{font:12px var(--mono);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ft-label{font-size:11px;color:var(--text3);margin-top:1px}
+.ft-empty{color:var(--text3);font-size:12px}
 
 /* ---------- command palette ---------- */
 .cmdk-back{position:fixed;inset:0;background:rgba(24,24,34,.28);opacity:0;pointer-events:none;transition:opacity .15s;

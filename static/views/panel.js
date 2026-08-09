@@ -1,7 +1,7 @@
 // Right-side detail drawer + the job mutations (status/fit/notes/promote) it drives.
 import { $, el, esc } from '../lib/dom.js';
-import { STATE, store, SCOLOR, ACTC, A, SRCL } from '../lib/state.js';
-import { statusIcon, fitStyle, stpill } from '../lib/ui.js';
+import { STATE, store, SCOLOR, FITC, ACTC, A, SRCL, CHEV } from '../lib/state.js';
+import { statusIcon, monogram } from '../lib/ui.js';
 import { api } from '../lib/api.js';
 import { toast } from '../lib/toast.js';
 import { refreshView } from '../lib/nav.js';
@@ -16,52 +16,67 @@ export async function openDetail(id){
   renderPanel(record);
   $("#panel").classList.add("open"); $("#backdrop").classList.add("open");
 }
-export function closePanel(){store.drawerId=null;$("#panel").classList.remove("open");$("#backdrop").classList.remove("open");}
+export function closePanel(){closeMenu();store.drawerId=null;$("#panel").classList.remove("open");$("#backdrop").classList.remove("open");}
 function prow(k,v){return v?`<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`:"";}
+
 function renderPanel(r){
+  closeMenu();
   const enr=r.enrichment||{}; const rl=store.META.region_label[r.region_bucket]||r.region_bucket;
   $("#pbCrumb").textContent=(r.company||"")+" · "+(r.id||"");
   const d=$("#panelBody"); d.innerHTML="";
+
+  // 1 · Identity
   const head=el("div","p-head"); head.dataset.id=r.id;
-  head.innerHTML=`<div class="p-titles"><div class="p-co">${esc(r.company)}</div><div class="p-ti">${esc(r.title)}</div></div>`;
+  head.innerHTML=monogram(r.company)+
+    `<div class="p-titles"><div class="p-co">${esc(r.company)}</div><div class="p-ti">${esc(r.title)}</div></div>`;
   head.appendChild(star(r));
   d.appendChild(head);
+
+  // 2 · Info (read-only facts; status + fit now live in the controls row below)
   const props=el("div","props");
-  props.innerHTML=`<div class="k">Status</div><div class="v">${stpill(r.status)}</div>`+
-    `<div class="k">Fit</div><div class="v"><span class="fitb" style="${fitStyle(r.fit_score)}">${r.fit_score||"?"}</span></div>`+
+  props.innerHTML=
     prow("Region",rl)+prow("Work mode",r.work_mode)+prow("Location",r.location)+prow("Salary",r.salary)+
     prow("Experience",r.experience_tag)+prow("Source",SRCL[r.source]||r.source)+prow("Why (fit)",r.fit_reason)+
     prow("Skills",(enr.skills||[]).join(", "))+prow("Tags",(r.tags||[]).join(", "))+prow("Promoted",r.promoted_to);
   d.appendChild(props);
-  if(r.url){const u=el("div");u.style.margin="8px 0";u.innerHTML=`<a href="${esc(r.url)}" target="_blank" rel="noopener">↗ open posting</a>`;d.appendChild(u);}
 
+  // 3 · Controls — status picker + fit picker + promote
+  const controls=el("div","p-controls");
+  controls.appendChild(statusChip(r));
+  controls.appendChild(fitChip(r));
+  const pm=el("button","tbtn",'Promote →'); pm.onclick=()=>promote(r); controls.appendChild(pm);
+  d.appendChild(controls);
+
+  // 4 · Open posting — the prominent filled CTA
+  if(r.url){
+    const cta=el("a","btn-primary block"); cta.href=r.url; cta.target="_blank"; cta.rel="noopener";
+    cta.innerHTML=`Open posting <span style="font-size:15px;line-height:1">↗</span>`;
+    d.appendChild(cta);
+  }
+
+  // 5 · Evaluation
   d.appendChild(evalSection(r));
 
-  d.appendChild(el("div","sec","Set status"));
-  const sm=el("div","stmenu");
-  store.META.statuses.forEach(s=>{const col=SCOLOR[s]||A.gray;const b=el("button","stopt"+(s===r.status?" on":""),`${statusIcon(s,11)}${s}`);
-    b.style.color=(s===r.status)?col:"var(--text2)"; b.onclick=()=>update(r.id,{status:s}); sm.appendChild(b);});
-  d.appendChild(sm);
-  const fitrow=el("div"); fitrow.style.margin="12px 0"; fitrow.innerHTML=`<span style="color:var(--text3);font-size:12px;margin-right:8px">Fit</span>`;
-  const fs=el("span","fitset"); [1,2,3,4,5].forEach(f=>{const b=el("button",f===r.fit_score?"on":"",String(f));b.onclick=()=>update(r.id,{fit:f});fs.appendChild(b);}); fitrow.appendChild(fs);
-  const pm=el("button","tbtn",'Promote →'); pm.style.marginLeft="10px"; pm.onclick=()=>promote(r); fitrow.appendChild(pm);
-  d.appendChild(fitrow);
-
-  const ta=el("textarea"); ta.value=r.notes||""; ta.placeholder="Notes…"; d.appendChild(ta);
-  const sn=el("button","tbtn","Save note"); sn.style.marginTop="7px"; sn.onclick=()=>update(r.id,{notes:ta.value}); d.appendChild(sn);
-
+  // 6 · Prepare & apply tools
   d.appendChild(el("div","sec","CV & apply"));
-  const ab=el("div","actionbtns");
-  ab.appendChild(taskBtn("CV",{cmd:"cv",id:r.id},"Rendering CV + cover letter"));
+  const ab=el("div","p-tools");
   ab.appendChild(taskBtn("AI-tailor",{cmd:"tailor",id:r.id},"AI-tailoring CV to JD"));
+  ab.appendChild(taskBtn("CV",{cmd:"cv",id:r.id},"Rendering CV + cover letter"));
   ab.appendChild(taskBtn("Prep apply",{cmd:"apply",id:r.id},"Building apply packet"));
   ab.appendChild(taskBtn("Liveness",{cmd:"liveness",id:r.id},"Checking URL liveness"));
   d.appendChild(ab);
   d.appendChild(el("div",null,`<div style="font-size:11px;color:var(--text3);margin-top:7px">After "Prep apply", tell Claude in chat: <b style="color:var(--accent);font-family:var(--mono)">apply to ${esc(r.id)}</b></div>`));
 
+  // 7 · Artifacts — file tiles
   d.appendChild(el("div","sec","Artifacts"));
-  const art=el("div","artifacts",`<span style="color:var(--text3)">—</span>`); d.appendChild(art); loadArtifacts(r.id,art);
+  const art=el("div","filetiles",`<span class="ft-empty">—</span>`); d.appendChild(art); loadArtifacts(r.id,art);
 
+  // 8 · Notes
+  d.appendChild(el("div","sec","Notes"));
+  const ta=el("textarea"); ta.value=r.notes||""; ta.placeholder="Notes…"; d.appendChild(ta);
+  const sn=el("button","tbtn","Save note"); sn.style.marginTop="7px"; sn.onclick=()=>update(r.id,{notes:ta.value}); d.appendChild(sn);
+
+  // 9 · Activity
   d.appendChild(el("div","sec","Activity"));
   const aw=el("div");
   const lb=el("button","tbtn","+ Log interview"); lb.style.marginBottom="9px"; lb.onclick=()=>toggleLog(aw,r.id); aw.appendChild(lb);
@@ -69,8 +84,73 @@ function renderPanel(r){
   if(!acts.length)aw.appendChild(el("div",null,`<div style="color:var(--text3);font-size:12px">No activity yet — log an interview, or say "sync inbox" in chat.</div>`));
   acts.forEach(a=>aw.appendChild(actCard(a))); d.appendChild(aw);
 
+  // 10 · Job description
   if(enr.description){d.appendChild(el("div","sec","Job description"));d.appendChild(el("div","jd",esc(enr.description)));}
 }
+
+// ---------- status / fit chip pickers ----------
+function statusChip(r){
+  const col=SCOLOR[r.status]||A.gray;
+  const wrap=el("div","chip-select");
+  const trig=el("button","cs-trig");
+  trig.innerHTML=`<span class="cs-lab">Status</span>${statusIcon(r.status,12)}`+
+    `<span style="color:${col};text-transform:capitalize">${esc(r.status)}</span><span class="cs-chev">${CHEV}</span>`;
+  trig.onclick=e=>{e.stopPropagation();
+    openMenu(wrap, store.META.statuses.map(s=>({
+      value:s, on:s===r.status,
+      html:`${statusIcon(s,12)}<span style="color:${SCOLOR[s]||A.gray};text-transform:capitalize">${esc(s)}</span>`
+    })), s=>{ if(s!==r.status) update(r.id,{status:s}); });
+  };
+  wrap.appendChild(trig); return wrap;
+}
+const FITW={5:"Excellent",4:"Strong",3:"Fair",2:"Weak",1:"Poor"};
+function fitChip(r){
+  const f=r.fit_score; const col=f?(FITC[f]||A.gray):A.gray;
+  const wrap=el("div","chip-select");
+  const trig=el("button","cs-trig");
+  trig.innerHTML=`<span class="cs-lab">Fit</span><span style="color:${col};font-weight:600">${f||"?"}</span><span class="cs-chev">${CHEV}</span>`;
+  trig.onclick=e=>{e.stopPropagation();
+    openMenu(wrap, [5,4,3,2,1].map(n=>({
+      value:n, on:n===f,
+      html:`<span style="color:${FITC[n]||A.gray};font-weight:600;font-family:var(--mono);width:14px;display:inline-block">${n}</span>`+
+           `<span style="color:var(--text2)">${FITW[n]}</span>`
+    })), n=>{ if(n!==f) update(r.id,{fit:n}); });
+  };
+  wrap.appendChild(trig); return wrap;
+}
+
+// ---------- one lightweight popover (single-open, outside-click / re-click to close) ----------
+let _menu=null;
+function _onDoc(e){ if(_menu && !_menu.parentNode.contains(e.target)) closeMenu(); }
+function closeMenu(){ if(_menu){_menu.remove();_menu=null;document.removeEventListener("mousedown",_onDoc,true);} }
+function openMenu(anchorWrap, items, onPick){
+  const wasHere=_menu && _menu.parentNode===anchorWrap; closeMenu(); if(wasHere)return;
+  const m=el("div","menu");
+  items.forEach(it=>{const mi=el("div","menuitem"+(it.on?" on":""),it.html);
+    mi.onclick=e=>{e.stopPropagation();closeMenu();onPick(it.value);}; m.appendChild(mi);});
+  anchorWrap.appendChild(m); _menu=m;
+  setTimeout(()=>document.addEventListener("mousedown",_onDoc,true),0);
+}
+
+// ---------- artifacts as file tiles ----------
+const FT_COLOR={pdf:"#dc2626",html:"#4f7d4a",txt:"#8a8f80",json:"#d98e26",md:"#8b5cf6"};
+function friendlyArtifact(name){
+  const ext=(name.split(".").pop()||"").toLowerCase();
+  const base=name.toLowerCase();
+  const label = base.startsWith("cv") ? "CV"
+              : base.startsWith("cover-letter") ? "Cover letter"
+              : base.startsWith("apply-packet") ? "Apply packet"
+              : name;
+  return {ext:ext.toUpperCase(), label, color:FT_COLOR[ext]||"#9ca3af"};
+}
+function fileTile(name,path){
+  const {ext,label,color}=friendlyArtifact(name);
+  const a=el("a","filetile"); a.href="/api/file?path="+encodeURIComponent(path); a.target="_blank"; a.rel="noopener";
+  a.innerHTML=`<span class="ft-badge" style="background:${color}">${esc(ext)}</span>`+
+    `<span class="ft-meta"><span class="ft-name">${esc(name)}</span><span class="ft-label">${esc(label)}</span></span>`;
+  return a;
+}
+
 function actCard(a){
   const col=ACTC[a.kind]||A.gray; const c=el("div","actcard"); c.style.borderLeftColor=col;
   c.innerHTML=`<div class="ci-top"><span class="actkind" style="color:${col}">${esc(a.kind)}</span><span class="ci-date" style="margin-left:auto">${esc(a.date||"")}</span></div>`+
@@ -92,8 +172,9 @@ function toggleLog(wrap,id){
 }
 async function loadArtifacts(id,box){
   try{const a=await api("/api/job/"+encodeURIComponent(id)+"/artifacts");
-    const links=Object.entries(a.files).filter(([,v])=>v).map(([k,v])=>`<a href="/api/file?path=${encodeURIComponent(v)}" target="_blank" rel="noopener">${esc(k)}</a>`);
-    box.innerHTML=links.length?links.join(""):`<span style="color:var(--text3)">none yet — run CV or Prep apply</span>`;
+    const files=Object.entries(a.files).filter(([,v])=>v);
+    if(!files.length){box.innerHTML=`<span class="ft-empty">none yet — run CV or Prep apply</span>`;return;}
+    box.innerHTML=""; files.forEach(([k,v])=>box.appendChild(fileTile(k,v)));
   }catch(e){}
 }
 
