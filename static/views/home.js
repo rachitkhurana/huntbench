@@ -1,10 +1,9 @@
-// Home view — the "garden" you land on. One full-bleed canvas layer (#garden-canvas)
-// spans the whole page; the floating UI (greeting, heatmap, metrics) sits on top in the
-// clear top-left. Reads /api/momentum (Phase 1) + /api/status (name) + store.META (funnel).
-// Pure derivation, no writes. The 3D bonsai later renders into #garden-canvas, composed so
-// the tree sits right + the ground runs along the bottom (leaving the top-left clear); until
-// then this is a calm, data-aware placeholder that still reflects the real hunt.
-import { $, el, esc, cap } from '../lib/dom.js';
+// Home view — the page you land on. A calm, cardless summary of the hunt: a greeting, the
+// activity heatmap, and a borderless metrics row (applications, interviewing, offers, streak +
+// today's goal ring, new-since-last-visit). Reads /api/momentum (Phase 1) + /api/status (name)
+// + store.META (funnel). Pure derivation, no writes. (The 3D bonsai garden lands later, on
+// feat/momentum-bonsai.)
+import { $, el, esc } from '../lib/dom.js';
 import { store } from '../lib/state.js';
 import { api } from '../lib/api.js';
 import { ring } from '../lib/ui.js';
@@ -27,15 +26,11 @@ async function loadHome(){
   const c = $("#content"); c.innerHTML = "";
   if(!m){ c.appendChild(el("div", "empty", "Couldn't load your momentum data.")); return; }
 
-  const g = m.growth || {};
   const funnel = (store.META && store.META.funnel) || {};
   const home = el("div", "home");
-  home.appendChild(gardenCanvas(g));                       // z-0: full-bleed placeholder
-  const ui = el("div", "home-ui");                         // z-1: floating, cardless UI
-  ui.appendChild(greetingEl(firstName(st.name)));
-  ui.appendChild(heatmapEl(m));
-  ui.appendChild(metricsEl(m, funnel));
-  home.appendChild(ui);
+  home.appendChild(greetingEl(firstName(st.name)));
+  home.appendChild(heatmapEl(m));
+  home.appendChild(metricsEl(m, funnel));
   c.appendChild(home);
 
   // Stamp this visit AFTER new_since was computed for this load (drives it next time).
@@ -118,35 +113,6 @@ function streakMetric(streak, goal){
     `<div class="metric-l">day streak</div></div>` +
     `<div class="goalring" title="Today: ${done} of ${target} actions">` +
       ring(frac, col, 40) + `<span class="gr-txt">${done}/${target}</span></div>`);
-}
-
-// ---- garden placeholder (full-bleed; the 3D bonsai replaces this layer's children) ----
-function sproutSVG(){
-  return `<svg class="gc-art" width="132" height="164" viewBox="0 0 132 164" fill="none" aria-hidden="true">` +
-    `<path d="M66 164V78" stroke="#7a9033" stroke-width="3.2" stroke-linecap="round"/>` +
-    `<path d="M66 106C66 106 48 101 39 86C55 81 66 92 66 106Z" fill="#8ca35b" fill-opacity=".9"/>` +
-    `<path d="M66 92C66 92 84 86 95 68C78 63 66 76 66 92Z" fill="#9db566" fill-opacity=".9"/>` +
-    `<path d="M66 80C66 80 55 68 57 52C69 57 69 71 66 80Z" fill="#8ca35b" fill-opacity=".95"/>` +
-    `<ellipse cx="66" cy="160" rx="38" ry="5.5" fill="#000" fill-opacity=".05"/></svg>`;
-}
-function gardenCanvas(g){
-  const stage = g.stage || "seed", pct = Math.round((g.growth || 0) * 100);
-  const b = g.blossoms || 0, f = g.fruit || 0, mood = g.mood || "resting", planted = g.planted_at || "";
-  const chip = (dot, txt) => `<span class="gc-chip"><i class="gc-dot" style="background:${dot}"></i>${txt}</span>`;
-  const layer = el("div", "garden-canvas");
-  layer.id = "garden-canvas";
-  layer.innerHTML =
-    `<span class="gc-soon">bonsai coming soon</span>` +
-    `<div class="gc-tree">${sproutSVG()}` +
-      `<div class="gc-cap"><span class="gc-stage">${esc(cap(stage))}</span>` +
-      `<span class="gc-pct">${pct}% grown</span></div></div>` +
-    `<div class="gc-ground">` +
-      chip("#e39aa6", `${b} blossom${b === 1 ? "" : "s"} · interviews`) +
-      chip("#e0863f", `${f} fruit · offers`) +
-      chip("#8ca35b", `garden is ${esc(mood)}`) +
-      (planted ? `<span class="gc-chip gc-planted">planted ${esc(planted)}</span>` : "") +
-    `</div>`;
-  return layer;
 }
 
 registerView("home", loadHome);

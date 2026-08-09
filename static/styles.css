@@ -350,31 +350,10 @@ textarea:focus{border-color:var(--accent)}
 .jc-foot{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .jc-foot .sp{flex:1}
 
-/* ---------- Home / garden ----------
-   One full-bleed canvas layer (.garden-canvas) fills the content area; the floating UI
-   (greeting, heatmap, metrics) sits on top in the clear top-left. No cards anywhere. */
-.home{position:relative;height:100%;overflow:hidden}
-
-/* full-bleed garden canvas — placeholder now; the 3D bonsai replaces its children later,
-   composed so the tree sits right + the ground runs along the bottom (top-left kept clear) */
-.garden-canvas{position:absolute;inset:0;z-index:0;overflow:hidden;
-  background:linear-gradient(180deg,#ffffff 0%,#ffffff 70%,#f3f7ed 87%,#e7efda 100%)}
-.gc-soon{position:absolute;top:18px;right:20px;font:10px var(--mono);letter-spacing:.4px;text-transform:uppercase;
-  color:var(--text3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;background:rgba(255,255,255,.5)}
-.gc-tree{position:absolute;right:9%;bottom:82px;display:flex;flex-direction:column;align-items:center;gap:12px}
-.gc-cap{display:flex;align-items:baseline;gap:9px}
-.gc-stage{font-weight:600;font-size:15px;color:var(--text)}
-.gc-pct{color:var(--green);font:600 12px var(--mono)}
-.gc-ground{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;align-items:center;gap:18px;
-  padding:16px 26px;border-top:1px solid rgba(124,144,60,.18)}
-.gc-chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--text2)}
-.gc-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
-.gc-planted{color:var(--text3);font:11px var(--mono)}
-
-/* floating UI layer (top-left); clicks pass through the gaps to the canvas below */
-.home-ui{position:relative;z-index:1;padding:28px 30px;max-width:700px;
-  display:flex;flex-direction:column;gap:24px;pointer-events:none}
-.home-ui>*{pointer-events:auto}
+/* ---------- Home ----------
+   A calm, cardless summary of the hunt: greeting, activity heatmap, borderless metrics row.
+   No cards anywhere. (The 3D bonsai garden lands later, on feat/momentum-bonsai.) */
+.home{padding:28px 30px;max-width:700px;display:flex;flex-direction:column;gap:24px}
 
 /* greeting */
 .home-greet{display:inline-block}
@@ -408,7 +387,5 @@ textarea:focus{border-color:var(--accent)}
 .gr-txt{position:absolute;font:600 10px var(--mono);color:var(--text2)}
 
 @media(max-width:900px){
-  .home{height:auto;overflow:visible;display:flex;flex-direction:column}
-  .garden-canvas{position:relative;inset:auto;order:2;min-height:340px}
-  .home-ui{order:1;max-width:none}
+  .home{max-width:none}
 }
