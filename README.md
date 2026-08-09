@@ -79,6 +79,9 @@ Huntbench stores/serves the results. See [`AGENTS.md`](AGENTS.md) for the full p
 rules the agent follows: it **never submits an application or sends an email without your review**,
 and it treats your inbox as **read-only** (proposes changes, you confirm).
 
+For a visual walkthrough of the architecture, data flow, safety gates, and dedicated agent roles, see
+the [`Project guide`](docs/PROJECT-GUIDE.md).
+
 ## Your data
 
 Everything lives in local files you control: `jobs.ndjson` (your pipeline), `config/` (your

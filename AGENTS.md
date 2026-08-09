@@ -5,6 +5,21 @@ Huntbench. Huntbench is a zero-dependency Python engine + local web dashboard; *
 work (discovery, tailoring, applying, inbox sync) using whatever tools you have, and Huntbench
 stores and serves the results. Everything runs locally from this repo with `python3 jobsdb.py …`.
 
+## Dedicated project agents
+
+For work that benefits from role separation, use the project agents in [`.agents/`](.agents/README.md):
+
+- **Career Ops Lead** owns the workflow, delegates bounded work, and presents approval gates.
+- **Profile Steward** onboards the candidate and protects the factual source of truth.
+- **Job Scout** discovers and enriches roles without making pipeline decisions.
+- **Fit Analyst** evaluates and recommends; it does not apply or contact anyone.
+- **Application Writer** tailors truthful materials and prepares packets without submitting.
+- **Inbox Analyst** reads job mail and proposes changes without writing to the inbox or database.
+- **Huntbench Maintainer** changes and verifies the product code without touching private user data.
+
+The roster and handoff contract live in [`.agents/README.md`](.agents/README.md). The system architecture
+is documented visually in [`docs/PROJECT-GUIDE.md`](docs/PROJECT-GUIDE.md).
+
 ## Golden rules
 - **Never submit an application, send an email, or accept terms without the user's explicit OK.**
   Fill forms and draft messages, then stop for review.
