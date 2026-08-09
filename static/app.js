@@ -10,6 +10,7 @@ import { runTask, requestSync, refreshSyncState } from './lib/tasks.js';
 import { openDetail, closePanel } from './views/panel.js';
 import { renderOnboard } from './views/onboard.js';
 import { openAddDialog } from './lib/addjob.js';
+import './views/home.js';     // registerView("home", …)
 import './views/list.js';     // registerView("list", …)  (pulls in cards.js)
 import './views/saved.js';    // registerView("saved", …)
 import './views/board.js';    // registerView("board", …)
@@ -23,6 +24,7 @@ async function init(){
   await bootDashboard();
 }
 async function bootDashboard(){
+  $("#ic-home").innerHTML=icon("home");
   $("#ic-list").innerHTML=icon("list"); $("#ic-saved").innerHTML=icon("saved"); $("#ic-board").innerHTML=icon("board");
   $("#ic-inbox").innerHTML=icon("inbox"); $("#ic-profile").innerHTML=icon("profile");
   store.META=await api("/api/meta");
@@ -40,7 +42,7 @@ async function bootDashboard(){
   $("#panelClose").onclick=closePanel; $("#backdrop").onclick=closePanel;
   $("#cmdtrigger").onclick=openCmdk;
   wireCmdk(); wireKeys(); watchDb();
-  setView(STATE.view);
+  setView("home");   // the garden is where you land each session; in-session nav still persists
 }
 
 // ---------- List | Cards sub-toggle (All jobs) ----------
@@ -85,6 +87,7 @@ function wireCmdk(){
 function buildCmd(q){
   q=(q||"").toLowerCase().trim();
   const actions=[
+    {t:"Go to Home",s:"view",hint:"",run:()=>{setView("home");closeCmdk();}},
     {t:"Go to All jobs",s:"view",hint:"",run:()=>{setView("list");closeCmdk();}},
     {t:"Go to Saved",s:"view",run:()=>{setView("saved");closeCmdk();}},
     {t:"Go to Board",s:"view",run:()=>{setView("board");closeCmdk();}},

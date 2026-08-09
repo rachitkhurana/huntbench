@@ -1,22 +1,27 @@
+/* Self-hosted Geist (OFL) — vendored variable fonts, no CDN, clone-and-run offline. */
+@font-face{font-family:'Geist';src:url('/static/fonts/Geist-Variable.woff2') format('woff2');
+  font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'Geist Mono';src:url('/static/fonts/GeistMono-Variable.woff2') format('woff2');
+  font-weight:100 900;font-style:normal;font-display:swap}
+
 :root{
-  --bg:#ffffff; --sidebar:#fbfbfa; --panel:#ffffff;
-  --border:rgba(0,0,0,.09); --border-2:rgba(0,0,0,.14);
-  --hover:rgba(0,0,0,.038); --active:rgba(94,106,210,.10); --sel:#f1f2fd;
-  --text:#282a30; --text2:#63666e; --text3:#9a9ea6;
-  --accent:#5e6ad2; --accent-h:#4f58c0; --tint:#eef0fd;
+  --bg:#fdfdfb; --sidebar:#f5efe4; --panel:#ffffff;
+  --border:rgba(38,40,20,.10); --border-2:rgba(38,40,20,.16); --sb-border:rgba(90,65,35,.11);
+  --hover:rgba(50,70,35,.05); --active:rgba(79,125,74,.13); --sel:#eef4ec;
+  --text:#23271f; --text2:#5b6152; --text3:#9aa08f;
+  --accent:#4f7d4a; --accent-h:#416a3d; --tint:#edf3e9;
   --green:#16a34a; --blue:#3b82f6; --amber:#d98e26; --violet:#8b5cf6; --red:#dc2626; --gray:#9ca3af;
   --r:6px; --r-lg:10px;
   --sh:0 1px 2px rgba(0,0,0,.05);
-  --sh-lg:0 14px 44px rgba(20,20,40,.16), 0 2px 8px rgba(0,0,0,.06);
-  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-  --mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+  --sh-lg:0 14px 44px rgba(30,26,15,.16), 0 2px 8px rgba(0,0,0,.06);
+  --font:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:'Geist Mono','SF Mono',ui-monospace,Menlo,Consolas,monospace;
   --ease:cubic-bezier(.22,.61,.36,1);
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.45;
-  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;height:100vh;display:flex;overflow:hidden;
-  font-feature-settings:'cv02','cv03','cv04','cv11','ss01'}
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;height:100vh;display:flex;overflow:hidden}
 a{color:var(--accent);text-decoration:none}
 ::selection{background:var(--tint)}
 button{font-family:inherit;cursor:pointer}
@@ -24,10 +29,11 @@ input{font-family:inherit}
 .empty{padding:48px;text-align:center;color:var(--text3)}
 
 /* ---------- sidebar ---------- */
-.sidebar{width:240px;flex:0 0 240px;background:var(--sidebar);border-right:1px solid var(--border);
+.sidebar{width:240px;flex:0 0 240px;background:var(--sidebar);border-right:1px solid var(--sb-border);
+  --text2:#6a6152;--text3:#a49a86;   /* warm the sidebar text on the bark surface */
   display:flex;flex-direction:column;padding:9px 8px;overflow-y:auto;gap:1px}
 .ws{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:var(--r);margin-bottom:6px}
-.ws .logo{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#5e6ad2,#9060e0);
+.ws .logo{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#4f7d4a,#8ca35b);
   color:#fff;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center}
 .ws .nm{font-weight:600}
 .cmdtrigger{display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:8px;border:1px solid var(--border);
@@ -49,7 +55,7 @@ input{font-family:inherit}
 .chip{font-size:11.5px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:#fff;
   color:var(--text2);cursor:pointer;transition:all .12s;display:inline-flex;gap:5px;align-items:center}
 .chip:hover{border-color:var(--border-2)}
-.chip.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(94,106,210,.35)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(79,125,74,.32)}
 .chip .n{font:10px var(--mono);opacity:.65}
 .mini{padding:4px 8px}
 .mbar{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11px}
@@ -66,7 +72,7 @@ input{font-family:inherit}
 .vcount{color:var(--text3);font:12px var(--mono);font-weight:400}
 .sp{flex:1}
 .tbtn{height:29px;padding:0 11px;border:1px solid var(--border);background:#fff;border-radius:var(--r);color:var(--text2);
-  font-size:12.5px;display:inline-flex;align-items:center;gap:6px;transition:all .12s}
+  font:12px var(--mono);display:inline-flex;align-items:center;gap:6px;transition:all .12s}
 .tbtn:hover{background:var(--hover);color:var(--text)}
 .tbtn.pending{border-color:var(--accent);color:var(--accent)}
 .tbtn.pending::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);margin-left:2px}
@@ -135,7 +141,7 @@ select.tbtn{-webkit-appearance:none;appearance:none;padding-right:22px;
 .cvbar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .cvhint{font-size:11.5px;color:var(--text3);line-height:1.5}
 .seg{display:flex;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.seg button{border:0;background:transparent;font:12px var(--font);color:var(--text2);
+.seg button{border:0;background:transparent;font:12px var(--mono);color:var(--text2);
   padding:5px 12px;cursor:pointer;transition:background .12s,color .12s}
 .seg button:hover{background:var(--hover)}
 .seg button.on{background:var(--accent);color:#fff}
@@ -237,7 +243,7 @@ textarea:focus{border-color:var(--accent)}
 .actkind{font:10px var(--mono);text-transform:uppercase;font-weight:700}
 .logform{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#fbfbfa;border:1px solid var(--border);border-radius:var(--r);padding:9px;margin-bottom:10px}
 .logform input,.logform select{font-size:12px;padding:5px 7px;border:1px solid var(--border);border-radius:5px;outline:none}
-.banner{background:var(--tint);border:1px solid rgba(94,106,210,.35);border-radius:var(--r);padding:11px 14px;margin-bottom:16px;font-size:12.5px;line-height:1.6;max-width:900px}
+.banner{background:var(--tint);border:1px solid rgba(79,125,74,.32);border-radius:var(--r);padding:11px 14px;margin-bottom:16px;font-size:12.5px;line-height:1.6;max-width:900px}
 
 /* ---------- command palette ---------- */
 .cmdk-back{position:fixed;inset:0;background:rgba(24,24,34,.28);opacity:0;pointer-events:none;transition:opacity .15s;
@@ -278,7 +284,7 @@ textarea:focus{border-color:var(--accent)}
 #onboard{position:fixed;inset:0;z-index:80;background:var(--bg);overflow-y:auto;display:none}
 #onboard.show{display:block}
 .ob-wrap{max-width:640px;margin:0 auto;padding:56px 24px 72px}
-.ob-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#5e6ad2,#9060e0);
+.ob-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#4f7d4a,#8ca35b);
   color:#fff;font-weight:700;font-size:20px;display:flex;align-items:center;justify-content:center;margin-bottom:22px}
 .ob-h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0 0 8px}
 .ob-sub{color:var(--text2);font-size:14px;line-height:1.6;margin-bottom:26px}
@@ -304,7 +310,7 @@ textarea:focus{border-color:var(--accent)}
 .ob-row{display:flex;gap:12px} .ob-row .ob-field{flex:1}
 .ob-nav{display:flex;justify-content:space-between;align-items:center;margin-top:22px}
 .ob-btn{height:36px;padding:0 18px;border-radius:var(--r);border:1px solid var(--accent);background:var(--accent);
-  color:#fff;font-size:13px;font-weight:500;transition:background .12s}
+  color:#fff;font:500 12.5px var(--mono);transition:background .12s}
 .ob-btn:hover{background:var(--accent-h)} .ob-btn:disabled{opacity:.5}
 .ob-btn.ghost{background:#fff;color:var(--text2);border-color:var(--border)}
 .ob-btn.ghost:hover{background:var(--hover);color:var(--text)}
@@ -343,3 +349,43 @@ textarea:focus{border-color:var(--accent)}
 .jc-meta .sal{color:var(--text2)}
 .jc-foot{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .jc-foot .sp{flex:1}
+
+/* ---------- Home ----------
+   A calm, cardless summary of the hunt: greeting, activity heatmap, borderless metrics row.
+   No cards anywhere. (The 3D bonsai garden lands later, on feat/momentum-bonsai.) */
+.home{padding:28px 30px;max-width:700px;display:flex;flex-direction:column;gap:24px}
+
+/* greeting */
+.home-greet{display:inline-block}
+.hg-hello{color:var(--text3);font-size:14px;font-weight:500;letter-spacing:.02em;margin-bottom:4px}
+.hg-name{position:relative;display:inline-block;font-size:42px;font-weight:700;letter-spacing:-.03em;
+  line-height:1.04;color:var(--text)}
+.hg-name::after{content:"";position:absolute;left:1px;bottom:-6px;width:48px;height:3px;border-radius:3px;
+  background:linear-gradient(90deg,#4f7a2e,#8ca35b)}
+
+/* heatmap (borderless) */
+.hm{max-width:100%}
+.hm-head{display:flex;align-items:baseline;gap:10px;margin-bottom:11px}
+.hm-title{font-weight:600;font-size:13.5px}
+.hm-sub{color:var(--text3);font:11px var(--mono)}
+.hm-scroll{overflow-x:auto;padding-bottom:2px}
+.hm-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,12px);grid-auto-columns:12px;gap:3px;width:max-content}
+.hm-c{width:12px;height:12px;border-radius:2.5px;display:block}
+.hm-legend{display:flex;align-items:center;gap:4px;justify-content:flex-start;margin-top:9px;color:var(--text3);font:10.5px var(--mono)}
+.hm-legend .hm-c{width:11px;height:11px}
+.hm-legend span:first-child{margin-right:3px} .hm-legend span:last-child{margin-left:3px}
+
+/* metrics (borderless row, thin dividers) */
+.metrics{display:flex;flex-wrap:wrap;align-items:center;row-gap:14px}
+.metric{display:flex;flex-direction:column;gap:3px;padding-right:22px;margin-right:22px;border-right:1px solid var(--border)}
+.metric:last-child{border-right:0;margin-right:0;padding-right:0}
+.metric-v{font:600 27px/1 var(--mono);letter-spacing:-.01em}
+.metric-l{color:var(--text3);font-size:11.5px;font-weight:500}
+.metric-streak{flex-direction:row;align-items:center;gap:12px}
+.ms-num{display:flex;flex-direction:column;gap:3px}
+.goalring{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.gr-txt{position:absolute;font:600 10px var(--mono);color:var(--text2)}
+
+@media(max-width:900px){
+  .home{max-width:none}
+}
