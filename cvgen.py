@@ -407,7 +407,7 @@ def _contact(cand):
     email = cand.get("email") or ""
     phones = cand.get("phone") or []
     tags = ["(UAE)", "(IN)"]
-    bits = [_clean(cand.get("location")), "open to UAE / Europe"]
+    bits = [_clean(cand.get("location")), _clean(cand.get("location_note"))]
     if pf:
         bits.append('<a href="%s">%s</a>' % (html.escape(pf), _clean(pf.replace("https://", ""))))
     if li:

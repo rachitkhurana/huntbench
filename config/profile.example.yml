@@ -8,6 +8,7 @@ candidate:
   phone:
     - "+1 555 010 0000"      # first entry is used as primary on forms
   location: "Berlin, Germany"
+  location_note: ""                      # optional, shown after location on the CV, e.g. "open to relocation"
   linkedin: "linkedin.com/in/janedoe"    # no scheme needed
   portfolio_url: "https://janedoe.dev"
   github: "github.com/janedoe"
