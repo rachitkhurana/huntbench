@@ -207,8 +207,10 @@ select.tbtn{-webkit-appearance:none;appearance:none;padding-right:22px;
 .backdrop{position:fixed;inset:0;background:rgba(24,24,32,.16);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
 .backdrop.open{opacity:1;pointer-events:auto}
 .panel{position:fixed;top:0;right:0;height:100vh;width:min(620px,95vw);background:#fff;border-left:1px solid var(--border);
-  transform:translateX(100%);transition:transform .26s var(--ease);z-index:41;display:flex;flex-direction:column;box-shadow:var(--sh-lg)}
-.panel.open{transform:none}
+  transform:translateX(100%);transition:transform .26s var(--ease),box-shadow .26s var(--ease);z-index:41;display:flex;flex-direction:column}
+/* Shadow on .open only: parked off-canvas, the 44px blur still bleeds back
+   onto the right edge of every view. */
+.panel.open{transform:none;box-shadow:var(--sh-lg)}
 .panelbar{height:46px;flex:0 0 46px;display:flex;align-items:center;gap:8px;padding:0 12px 0 16px;border-bottom:1px solid var(--border)}
 .panelbar .pb-crumb{color:var(--text3);font:12px var(--mono)}
 .iconbtn{width:28px;height:28px;border:1px solid transparent;border-radius:var(--r);background:none;color:var(--text2);
