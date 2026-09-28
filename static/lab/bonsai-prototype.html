@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Huntbench · Bonsai prototype (watercolor)</title>
+<style>
+  :root{
+    --bg:#f4f0e8; --panel:rgba(255,255,255,.82); --border:rgba(0,0,0,.10);
+    --text:#33302a; --text2:#6b675e; --accent:#7a8b57; --mono:"SF Mono",ui-monospace,Menlo,monospace;
+    --font:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden}
+  #stage{position:fixed;inset:0}
+  canvas{display:block}
+
+  #panel{
+    position:fixed;top:16px;left:16px;width:264px;padding:16px 16px 14px;
+    background:var(--panel);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.07);
+    font-size:13px;user-select:none;
+  }
+  #panel h1{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);margin:0 0 12px;font-weight:600}
+  .row{margin:0 0 13px}.row:last-child{margin-bottom:0}
+  .lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+  .lab b{font-weight:600}.lab .v{font-family:var(--mono);font-size:12px;color:var(--accent)}
+  input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:0}
+  .step{display:flex;align-items:center;gap:8px}
+  .step button{width:26px;height:26px;border:1px solid var(--border);background:#fff;border-radius:7px;
+    font-size:15px;line-height:1;cursor:pointer;color:var(--text);display:grid;place-items:center}
+  .step button:hover{background:#eef1e6;border-color:var(--accent)}
+  .step .cnt{font-family:var(--mono);min-width:26px;text-align:center}
+  .step .name{margin-left:auto;color:var(--text2)}
+  .btns{display:flex;gap:8px;margin-top:2px}
+  .btns button{flex:1;padding:8px 0;border:1px solid var(--border);background:#fff;border-radius:8px;
+    font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;color:var(--text)}
+  .btns button:hover{background:#eef1e6;border-color:var(--accent);color:var(--accent)}
+  #stage-label{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--text2);
+    background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:7px 16px;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  #stage-label b{color:var(--text);font-weight:600;letter-spacing:.06em}
+  .hint{position:fixed;right:16px;bottom:18px;font-size:11px;color:var(--text2);opacity:.7}
+</style>
+</head>
+<body>
+  <div id="stage"></div>
+
+  <div id="panel">
+    <h1>Bonsai · watercolor dev controls</h1>
+    <div class="row">
+      <div class="lab"><b>Growth</b><span class="v" id="growthV">0%</span></div>
+      <input type="range" id="growth" min="0" max="100" value="0" />
+    </div>
+    <div class="row">
+      <div class="lab"><b>Mood</b><span class="v" id="moodV">lush</span></div>
+      <input type="range" id="mood" min="0" max="100" value="100" />
+    </div>
+    <div class="row step">
+      <button data-d="-1" data-t="interviews">–</button>
+      <span class="cnt" id="interviewsC">0</span>
+      <button data-d="1" data-t="interviews">+</button>
+      <span class="name">interviews → blossoms</span>
+    </div>
+    <div class="row step">
+      <button data-d="-1" data-t="offers">–</button>
+      <span class="cnt" id="offersC">0</span>
+      <button data-d="1" data-t="offers">+</button>
+      <span class="name">offers → fruit</span>
+    </div>
+    <div class="btns">
+      <button id="play">▶ Grow</button>
+      <button id="replant">↻ Replant</button>
+    </div>
+  </div>
+
+  <div id="stage-label">stage · <b id="stageName">seed</b></div>
+  <div class="hint">drag to orbit · scroll to zoom</div>
+
+<script type="module">
+import * as THREE from '../lib/three.module.min.js';
+
+// ============================================================================
+//  Huntbench bonsai — watercolor / sumi-e prototype
+//  Structure grows from EFFORT; blossoms = interviews, fruit = offers,
+//  foliage colour = recent-activity "mood". Painterly look via soft toon ramps,
+//  dome-shaded foliage, tapered tube branches, and a paper-grain multiply pass.
+//  Material-only, zero extra deps beyond the vendored three.module.min.js.
+// ============================================================================
+
+// ---- washi / sumi-e palette -------------------------------------------------
+const COL = {
+  bg:0xf4f0e8, paper:0xf4f0e8,
+  ink:0x2c2c2c, inkSoft:0x5a6270,       // trunk / branch
+  leafDark:0x45611c, leafMid:0x6d9138, leafLush:0x83a844, leafRest:0x94986a,
+  blossom:0xf2a7b0, fruit:0xe08a3f,
+  pot:0x515a54, potRim:0x5c655e, soil:0x352b24, ground:0xece7db,
+  seed:0x8a6b4e,
+};
+
+// ---- helpers ----------------------------------------------------------------
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const smooth=(e0,e1,x)=>{const t=Math.min(1,Math.max(0,(x-e0)/(e1-e0)));return t*t*(3-2*t);};
+const lerp=(a,b,t)=>a+(b-a)*t;
+const STAGES=[[0.02,'seed'],[0.12,'sprout'],[0.30,'seedling'],[0.55,'sapling'],[0.85,'young tree'],[1.01,'bonsai']];
+const stageName=g=>{for(const[t,n]of STAGES)if(g<t)return n;return'bonsai';};
+
+// ---- error surfacing + WebGL preflight --------------------------------------
+function fail(title,msg){
+  const o=document.createElement('div');
+  o.style.cssText='position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:48px;'+
+    'text-align:center;background:rgba(244,240,232,.96);font-family:var(--font)';
+  o.innerHTML='<div style="max-width:420px"><div style="font-size:15px;font-weight:600;color:#b0362f;margin-bottom:10px">'+
+    title+'</div><div style="font-size:13px;line-height:1.6;color:#444">'+msg+'</div></div>';
+  document.body.appendChild(o);
+}
+const glOK=(()=>{try{const c=document.createElement('canvas');
+  return !!(window.WebGLRenderingContext&&(c.getContext('webgl2')||c.getContext('webgl')));}catch(e){return false;}})();
+
+// ---- renderer ---------------------------------------------------------------
+const stageEl=document.getElementById('stage');
+let renderer;
+try{
+  if(!glOK) throw new Error('no-webgl');
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.toneMapping=THREE.NoToneMapping;        // flat & poster-like — keeps ink dark, greens saturated
+  renderer.setClearColor(new THREE.Color(COL.bg),1);
+  stageEl.appendChild(renderer.domElement);
+}catch(err){
+  fail('WebGL unavailable in this window',
+    'The 3D bonsai needs WebGL, which this browser window can\'t provide'+
+    (err&&err.message&&err.message!=='no-webgl'?' ('+err.message+')':'')+'.<br><br>'+
+    'Open the URL in a <b>normal Chrome window</b> (not an automation/remote one), turn on '+
+    '<b>Settings → System → Use hardware acceleration</b>, or check <b>chrome://gpu</b>, then reload.');
+  throw err;
+}
+const diag=document.createElement('div');
+diag.style.cssText='position:fixed;right:14px;top:14px;font:11px/1.4 var(--mono);color:#6b675e;'+
+  'background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.08);border-radius:7px;padding:5px 8px';
+document.body.appendChild(diag);
+let _fps=0,_ft=0,_fn=0;
+
+// ---- scene ------------------------------------------------------------------
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(COL.bg);
+scene.fog=new THREE.Fog(COL.bg,16,34);
+const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,0.1,100);
+const camTarget=new THREE.Vector3(0.2,1.5,0);
+
+// soft, calm light
+scene.add(new THREE.HemisphereLight(0xffffff,0xdfe3d0,0.38));
+const key=new THREE.DirectionalLight(0xfff3df,0.78);
+key.position.set(4,7,3);key.castShadow=true;
+key.shadow.mapSize.set(1024,1024);
+key.shadow.camera.near=1;key.shadow.camera.far=24;
+key.shadow.camera.left=-5;key.shadow.camera.right=5;key.shadow.camera.top=6;key.shadow.camera.bottom=-2;
+key.shadow.bias=-0.0007;key.shadow.radius=6;
+scene.add(key);
+
+// ---- canvas-texture factories (zero image assets) ---------------------------
+function toonRamp(shades){                        // soft banded grayscale ramp for MeshToonMaterial
+  const w=64,c=document.createElement('canvas');c.width=w;c.height=1;const ctx=c.getContext('2d');
+  const img=ctx.createImageData(w,1),n=shades.length;
+  for(let x=0;x<w;x++){
+    const f=x/(w-1);let band=Math.min(n-1,Math.floor(f*n));const local=f*n-band;
+    let v=shades[band];if(local>0.78&&band<n-1)v=lerp(shades[band],shades[band+1],(local-0.78)/0.22);
+    const g=Math.round(v*255);img.data[x*4]=g;img.data[x*4+1]=g;img.data[x*4+2]=g;img.data[x*4+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;return t;
+}
+function softBlob(hex,soft){                       // radial-gradient sprite (blossom / fruit / petal)
+  const s=64,c=document.createElement('canvas');c.width=c.height=s;const ctx=c.getContext('2d');
+  const col='#'+hex.toString(16).padStart(6,'0');
+  const g=ctx.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  g.addColorStop(0,col);g.addColorStop(soft?0.5:0.62,col);
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(s/2,s/2,s/2,0,7);ctx.fill();
+  const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;return t;
+}
+function paperTexture(){                            // warm paper grain + soft vignette (multiply)
+  const s=512,c=document.createElement('canvas');c.width=c.height=s;const ctx=c.getContext('2d');
+  const base=new THREE.Color(COL.paper);
+  const img=ctx.createImageData(s,s);
+  for(let i=0;i<s*s;i++){
+    const x=i%s,y=(i/s)|0;
+    const n=0.94+0.06*Math.random();               // fine paper tooth
+    // soft vignette toward the edges
+    const dx=(x/s-0.5),dy=(y/s-0.5);const d=Math.sqrt(dx*dx+dy*dy);
+    const vig=1-smooth(0.34,0.72,d)*0.16;
+    const m=n*vig;
+    img.data[i*4]=Math.round(base.r*255*m);
+    img.data[i*4+1]=Math.round(base.g*255*m);
+    img.data[i*4+2]=Math.round(base.b*255*m);
+    img.data[i*4+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  // a couple of faint fibre streaks
+  ctx.globalAlpha=0.04;ctx.strokeStyle='#000';
+  for(let k=0;k<40;k++){ctx.beginPath();const y=Math.random()*s;ctx.moveTo(0,y);ctx.lineTo(s,y+(Math.random()-0.5)*30);ctx.stroke();}
+  const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;return t;
+}
+
+// ---- materials --------------------------------------------------------------
+const barkMat=new THREE.MeshToonMaterial({color:COL.ink,gradientMap:toonRamp([0.18,0.5,0.85])});
+const leafMatA=new THREE.MeshToonMaterial({color:COL.leafMid, gradientMap:toonRamp([0.42,0.72,1.0])});
+const leafMatB=new THREE.MeshToonMaterial({color:COL.leafDark,gradientMap:toonRamp([0.42,0.72,1.0])});
+const blossomTex=softBlob(COL.blossom,true), fruitTex=softBlob(COL.fruit,false), petalTex=softBlob(COL.blossom,true);
+const padGeo=new THREE.IcosahedronGeometry(0.42,2);   // smooth (no flatShading) => soft dome shading
+
+// ---- paper multiply overlay temporarily removed (it was washing the frame) --
+// (will re-add paper grain later via a correctly-set-up pass or in-material.)
+
+// ---- ground + soft contact shadow ------------------------------------------
+const ground=new THREE.Mesh(new THREE.CircleGeometry(16,48),
+  new THREE.MeshToonMaterial({color:COL.ground,gradientMap:toonRamp([0.7,0.9,1.0])}));
+ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+(function contactShadow(){
+  const s=128,c=document.createElement('canvas');c.width=c.height=s;const ctx=c.getContext('2d');
+  const g=ctx.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  g.addColorStop(0,'rgba(40,35,28,0.33)');g.addColorStop(0.6,'rgba(40,35,28,0.14)');g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,s,s);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(3.4,2.4),
+    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
+  m.rotation.x=-Math.PI/2;m.position.y=0.02;scene.add(m);
+})();
+
+// ---- pot (shallow calm tray) ------------------------------------------------
+(function pot(){
+  const g=new THREE.Group();scene.add(g);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.44,1.15),
+    new THREE.MeshToonMaterial({color:COL.pot,gradientMap:toonRamp([0.45,0.75,1.0])}));
+  body.position.y=0.24;body.castShadow=true;body.receiveShadow=true;
+  const rim=new THREE.Mesh(new THREE.BoxGeometry(1.94,0.09,1.28),
+    new THREE.MeshToonMaterial({color:COL.potRim,gradientMap:toonRamp([0.5,0.78,1.0])}));
+  rim.position.y=0.46;rim.castShadow=true;
+  const soil=new THREE.Mesh(new THREE.BoxGeometry(1.7,0.1,1.05),
+    new THREE.MeshToonMaterial({color:COL.soil,gradientMap:toonRamp([0.6,0.85,1.0])}));
+  soil.position.y=0.47;soil.receiveShadow=true;
+  g.add(body,rim,soil);
+})();
+const SOIL_Y=0.52;
+
+// ---- tapered smooth tube along a curve (base->tip ordered index) ------------
+function taperedTube(curve,r0,r1,tub,rad){
+  const pos=[],nor=[],idx=[];
+  for(let i=0;i<=tub;i++){
+    const t=i/tub, P=curve.getPointAt(t), T=curve.getTangentAt(t);
+    // build a stable frame from the tangent
+    let up=Math.abs(T.y)<0.92?new THREE.Vector3(0,1,0):new THREE.Vector3(1,0,0);
+    const N=new THREE.Vector3().crossVectors(T,up).normalize();
+    const B=new THREE.Vector3().crossVectors(T,N).normalize();
+    const r=lerp(r0,r1,t);
+    for(let j=0;j<=rad;j++){
+      const a=j/rad*Math.PI*2, dir=N.clone().multiplyScalar(Math.cos(a)).add(B.clone().multiplyScalar(Math.sin(a)));
+      pos.push(P.x+dir.x*r,P.y+dir.y*r,P.z+dir.z*r);
+      nor.push(dir.x,dir.y,dir.z);
+    }
+  }
+  for(let i=0;i<tub;i++)for(let j=0;j<rad;j++){
+    const a=(rad+1)*i+j,b=(rad+1)*(i+1)+j;
+    idx.push(a,b,a+1, b,b+1,a+1);
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));
+  g.setIndex(idx);
+  return g;
+}
+
+// ---- tree generation --------------------------------------------------------
+const MAXDEPTH=3;
+const treePivot=new THREE.Group();scene.add(treePivot);
+let treeGroup=new THREE.Group();treePivot.add(treeGroup);
+let limbs=[],pads=[],petals=[],seedMesh=null;
+
+function perpendicular(d,rng){
+  const a=Math.abs(d.y)<0.9?new THREE.Vector3(0,1,0):new THREE.Vector3(1,0,0);
+  return new THREE.Vector3().crossVectors(d,a).normalize().applyAxisAngle(d,rng()*Math.PI*2);
+}
+function branchOut(d,rng){
+  const az=rng()*Math.PI*2,out=new THREE.Vector3(Math.cos(az),0,Math.sin(az));
+  return new THREE.Vector3().addScaledVector(out,0.8).addScaledVector(new THREE.Vector3(0,1,0),0.5)
+    .addScaledVector(d,0.35).normalize();
+}
+
+function addLimb(pts,r0,r1,depth,appearAt,span){
+  const curve=new THREE.CatmullRomCurve3(pts,false,'catmullrom',0.5);
+  const tub=Math.max(8,(pts.length-1)*5), rad=depth===0?9:depth===1?7:5;
+  const geo=taperedTube(curve,r0,r1,tub,rad);
+  const m=new THREE.Mesh(geo,barkMat);m.castShadow=true;m.userData.own=true;
+  geo.setDrawRange(0,0);treeGroup.add(m);
+  // rounded caps: base sphere blends the junction with the parent; tip sphere closes
+  // the otherwise-open tube end (kills the hollow-pipe look).
+  const base=new THREE.Mesh(new THREE.SphereGeometry(r0*1.03,8,6),barkMat);
+  base.position.copy(pts[0]);base.castShadow=true;base.userData.own=true;base.visible=false;treeGroup.add(base);
+  const tip=new THREE.Mesh(new THREE.SphereGeometry(Math.max(r1,0.02)*1.05,8,6),barkMat);
+  tip.position.copy(pts[pts.length-1]);tip.castShadow=true;tip.userData.own=true;tip.visible=false;treeGroup.add(tip);
+  limbs.push({m,geo,tub,ringIdx:rad*6,appearAt,span,base,tip});
+}
+function addPad(pos,appearAt,base,rng){
+  const g=new THREE.Group();g.position.copy(pos);g.scale.setScalar(0.0001);
+  const n=3+(rng()<0.5?1:0);
+  for(let k=0;k<n;k++){
+    const s=k===0?1:0.55+0.35*rng();
+    const mm=new THREE.Mesh(padGeo,k%2?leafMatB:leafMatA);mm.castShadow=true;
+    mm.position.set((rng()-0.5)*0.36,(rng()-0.5)*0.18,(rng()-0.5)*0.36);
+    mm.scale.set(s,s*0.8,s);
+    g.add(mm);
+  }
+  treeGroup.add(g);
+  // blossom + fruit as camera-facing sprites seated on the OUTER canopy (always visible)
+  const bl=new THREE.Sprite(new THREE.SpriteMaterial({map:blossomTex,color:0xffffff,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));
+  bl.position.copy(pos).add(new THREE.Vector3(0,0.16,0));bl.scale.setScalar(0.34);bl.visible=false;treeGroup.add(bl);
+  const fr=new THREE.Sprite(new THREE.SpriteMaterial({map:fruitTex,color:0xffffff,blending:THREE.NormalBlending,transparent:true,depthWrite:false}));
+  fr.position.copy(pos).add(new THREE.Vector3(0.05,-0.14,0));fr.scale.setScalar(0.22);fr.visible=false;treeGroup.add(fr);
+  pads.push({g,appearAt,base,blossom:bl,fruit:fr});
+}
+
+function grow(base,dir,len,r0,depth,appearBase,appearSpan,rng){
+  const segs=depth===0?6:4;
+  const pts=[base.clone()],dirs=[dir.clone().normalize()];
+  let p=base.clone(),d=dir.clone().normalize();const segLen=len/segs;
+  for(let i=0;i<segs;i++){
+    const bend=perpendicular(d,rng);let ang=(rng()-0.5)*0.5;
+    if(depth===0)ang+=(i%2===0?0.13:-0.05);                 // soft trunk S-curve
+    d=d.clone().applyAxisAngle(bend,ang).normalize();
+    p=p.clone().addScaledVector(d,segLen);pts.push(p.clone());dirs.push(d.clone());
+  }
+  const terminal=depth>=MAXDEPTH;
+  addLimb(pts,r0,terminal?0.02:r0*0.55,depth,appearBase,appearSpan);
+  if(!terminal){
+    const nCh=depth===0?3:(rng()<0.6?2:1);
+    for(let c=0;c<nCh;c++){
+      const frac=depth===0?(0.42+0.52*rng()):(0.5+0.45*rng());
+      const k=Math.max(1,Math.min(segs,Math.round(frac*segs)));
+      const cd=branchOut(dirs[k],rng);
+      const cLen=len*(0.52+0.2*rng())*(1-0.18*(k/segs));
+      const cAppear=appearBase+appearSpan*(k/segs)+0.03;
+      grow(pts[k],cd,cLen,r0*(1-(k/segs)*0.45)*0.86,depth+1,cAppear,appearSpan*0.62,rng);
+    }
+  }
+  if(depth>=2) addPad(pts[pts.length-1],appearBase+appearSpan+0.03,0.85+0.5*rng(),rng);
+}
+
+function buildTree(seed){
+  treePivot.remove(treeGroup);
+  treeGroup.traverse(o=>{if(o.geometry&&o.geometry!==padGeo&&o.userData.own)o.geometry.dispose();});
+  treeGroup=new THREE.Group();treePivot.add(treeGroup);
+  limbs=[];pads=[];
+  const rng=mulberry32(seed);
+  grow(new THREE.Vector3(0,SOIL_Y,0),new THREE.Vector3(0.04,1,0.02),1.7,0.23,0,0,0.3,rng);
+  pads.sort((a,b)=>a.appearAt-b.appearAt);
+
+  if(seedMesh)treePivot.remove(seedMesh);
+  seedMesh=new THREE.Mesh(new THREE.SphereGeometry(0.09,12,10),
+    new THREE.MeshToonMaterial({color:COL.seed,gradientMap:toonRamp([0.5,0.8,1.0])}));
+  seedMesh.position.set(0,SOIL_Y+0.02,0);seedMesh.scale.set(1,0.7,1);seedMesh.castShadow=true;treePivot.add(seedMesh);
+}
+
+// ---- drifting sakura petals (created once, reused) --------------------------
+(function makePetals(){
+  for(let i=0;i<30;i++){
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:petalTex,color:0xffffff,blending:THREE.AdditiveBlending,transparent:true,opacity:0.9,depthWrite:false}));
+    sp.scale.setScalar(0.12);sp.visible=false;scene.add(sp);
+    petals.push({sp,x:(Math.sin(i*12.9)*0.5)*4,y:Math.abs(Math.sin(i*7.7))*4+0.5,z:(Math.cos(i*5.3)*0.5)*3,
+      vy:0.25+0.15*Math.abs(Math.sin(i*3.1)),ph:i*1.7,sw:0.5+0.5*Math.abs(Math.cos(i*2.3))});
+  }
+})();
+
+// ---- state + per-frame update ----------------------------------------------
+const state={growth:0,growthShown:0,mood:1,interviews:0,offers:0};
+function update(dt,t){
+  state.growthShown+=(state.growth-state.growthShown)*Math.min(1,dt*3.2);
+  const g=state.growthShown;
+
+  // branches grow by revealing the tube from base to tip (drawRange)
+  for(const b of limbs){
+    const lg=smooth(b.appearAt,b.appearAt+Math.max(b.span,0.05),g);
+    b.m.visible=lg>0.01;
+    const gaps=Math.round(b.tub*lg);
+    b.geo.setDrawRange(0,gaps*b.ringIdx);
+    b.base.visible=lg>0.04; b.tip.visible=lg>0.92;   // base blends the junction, tip closes the end
+  }
+  // foliage pads scale in, tips last
+  const moodS=lerp(0.8,1,state.mood);
+  for(const p of pads){
+    const lg=smooth(p.appearAt,p.appearAt+0.1,g);
+    p.g.scale.setScalar(Math.max(0.0001,lg*p.base*0.82*moodS));
+    p.g.visible=lg>0.01;
+  }
+  // seed fades as the sprout emerges
+  if(seedMesh){const sv=1-smooth(0.02,0.12,g);seedMesh.visible=sv>0.02;seedMesh.scale.set(sv*0.9+0.0001,sv*0.63+0.0001,sv*0.9+0.0001);}
+
+  // mood colours the foliage (lush green -> resting sage)
+  leafMatA.color.lerpColors(new THREE.Color(COL.leafRest),new THREE.Color(COL.leafLush),state.mood);
+  leafMatB.color.lerpColors(new THREE.Color(COL.leafRest),new THREE.Color(COL.leafDark),state.mood);
+
+  // blossoms (interviews) on earliest visible pads, fruit (offers) on latest
+  const vis=pads.filter(p=>p.g.scale.x>0.12);
+  vis.forEach((p,i)=>{
+    const on=i<state.interviews;p.blossom.visible=on;
+    if(on)p.blossom.material.opacity=Math.min(1,(p.g.scale.x)*3);
+    const fon=(vis.length-1-i)<state.offers && i>=state.interviews;p.fruit.visible=fon;
+  });
+
+  // drifting petals — a gentle few when the tree is grown / blossoming
+  const nPet=g>0.5?Math.min(petals.length,4+state.interviews*4):0;
+  petals.forEach((pt,i)=>{
+    const active=i<nPet;pt.sp.visible=active;if(!active)return;
+    pt.y-=pt.vy*dt; if(pt.y<0.1){pt.y=4+Math.random();}
+    pt.sp.position.set(pt.x+Math.sin(t*pt.sw+pt.ph)*0.5, pt.y, pt.z+Math.cos(t*pt.sw*0.7+pt.ph)*0.4);
+    pt.sp.material.rotation=t*0.8+pt.ph;
+    pt.sp.material.opacity=0.85*smooth(0.1,0.6,pt.y)*smooth(4.5,3.2,pt.y);
+  });
+}
+
+// ---- camera orbit (drag only, no auto-rotate) + gentle sway -----------------
+let az=0.55,el=0.13,radius=6.6,dragging=false,px=0,py=0;
+renderer.domElement.addEventListener('pointerdown',e=>{dragging=true;px=e.clientX;py=e.clientY;});
+addEventListener('pointerup',()=>dragging=false);
+addEventListener('pointermove',e=>{
+  if(!dragging)return;
+  az-=(e.clientX-px)*0.006;el+=(e.clientY-py)*0.005;
+  el=Math.max(-0.05,Math.min(0.85,el));px=e.clientX;py=e.clientY;
+});
+renderer.domElement.addEventListener('wheel',e=>{radius=Math.max(4.2,Math.min(11,radius+e.deltaY*0.01));},{passive:true});
+
+const clock=new THREE.Clock();
+function frame(){
+  const dt=Math.min(clock.getDelta(),0.05),t=clock.elapsedTime;
+  update(dt,t);
+  treeGroup.rotation.z=Math.sin(t*0.55)*0.010;      // gentle breeze
+  treeGroup.rotation.x=Math.sin(t*0.4+1)*0.006;
+  camera.position.set(
+    camTarget.x+radius*Math.cos(el)*Math.sin(az),
+    camTarget.y+radius*Math.sin(el),
+    camTarget.z+radius*Math.cos(el)*Math.cos(az));
+  camera.lookAt(camTarget);
+  renderer.render(scene,camera);
+  _ft+=dt;_fn++;if(_ft>=0.5){_fps=Math.round(_fn/_ft);_ft=0;_fn=0;}
+  const vb=limbs.filter(b=>b.m.visible).length,vp=pads.filter(p=>p.g.visible).length;
+  diag.textContent=`${_fps} fps · grow ${(state.growthShown*100|0)}% · limbs ${vb}/${limbs.length} · pads ${vp}/${pads.length}`;
+  requestAnimationFrame(frame);
+}
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);
+});
+
+// ---- UI wiring --------------------------------------------------------------
+const $=s=>document.querySelector(s);
+function setGrowth(v){state.growth=v/100;$('#growthV').textContent=Math.round(v)+'%';$('#stageName').textContent=stageName(state.growth);}
+$('#growth').addEventListener('input',e=>setGrowth(+e.target.value));
+$('#mood').addEventListener('input',e=>{state.mood=+e.target.value/100;$('#moodV').textContent=state.mood>0.66?'lush':state.mood>0.33?'calm':'resting';});
+document.querySelectorAll('.step button').forEach(b=>b.addEventListener('click',()=>{
+  const tt=b.dataset.t,d=+b.dataset.d,max=tt==='interviews'?14:6;
+  state[tt]=Math.max(0,Math.min(max,state[tt]+d));$('#'+tt+'C').textContent=state[tt];
+}));
+$('#play').addEventListener('click',()=>{const start=performance.now();(function a(){const p=Math.min(1,(performance.now()-start)/4600);$('#growth').value=p*100;setGrowth(p*100);if(p<1)requestAnimationFrame(a);})();});
+let seed=1337;
+$('#replant').addEventListener('click',()=>{seed=(seed*1103515245+12345)&0x7fffffff;buildTree(seed);});
+
+buildTree(seed);setGrowth(0);frame();
+</script>
+</body>
+</html>

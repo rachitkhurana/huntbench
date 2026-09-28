@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Huntbench — theme options</title>
+<style>
+  @font-face{font-family:'Geist';src:url('/static/fonts/Geist-Variable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
+  @font-face{font-family:'Geist Mono';src:url('/static/fonts/GeistMono-Variable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
+  :root{--font:'Geist',system-ui,-apple-system,sans-serif;--mono:'Geist Mono',ui-monospace,monospace}
+  *{box-sizing:border-box}
+  body{font-family:var(--font);background:#ecece9;color:#1c1c1c;margin:0;padding:36px 22px 60px;-webkit-font-smoothing:antialiased}
+  .pg-title{max-width:1120px;margin:0 auto 6px;font-size:22px;font-weight:700;letter-spacing:-.02em}
+  .pg-sub{max-width:1120px;margin:0 auto 30px;color:#6b6b6b;font-size:13.5px}
+
+  /* ---- theme token sets (this is exactly how the real reskin cascades) ---- */
+  .theme-matcha{
+    --bg:#fdfdfb;--sidebar:#f6f6f0;--panel:#ffffff;
+    --border:rgba(38,40,20,.10);--border-2:rgba(38,40,20,.16);
+    --hover:rgba(50,70,35,.05);--active:rgba(79,125,74,.13);--sel:#eef4ec;--tint:#edf3e9;
+    --text:#23271f;--text2:#5b6152;--text3:#9aa08f;
+    --accent:#4f7d4a;--accent-h:#416a3d;
+    --underline:linear-gradient(90deg,#4f7a2e,#8ca35b);
+    --garden:linear-gradient(180deg,#fff 0%,#fff 64%,#f2f6ec 85%,#e7efda 100%);
+    --blossom:#e39aa6;--fruit:#e0863f;--sage:#8ca35b;
+    --applied:#4f7d4a;--interview:#8b5cf6;--offer:#2f9e44;
+  }
+  .theme-matcha .lvl0{background:rgba(0,0,0,.05)} .theme-matcha .lvl1{background:rgba(79,157,90,.32)}
+  .theme-matcha .lvl2{background:rgba(79,157,90,.55)} .theme-matcha .lvl3{background:rgba(63,139,79,.78)}
+  .theme-matcha .lvl4{background:#3f8b4f}
+
+  .theme-sage{
+    --bg:#fdfcf7;--sidebar:#f5f3ea;--panel:#fffdf8;
+    --border:rgba(60,50,30,.10);--border-2:rgba(60,50,30,.16);
+    --hover:rgba(70,80,50,.045);--active:rgba(111,143,90,.15);--sel:#f0efe4;--tint:#eef1e6;
+    --text:#2a2b24;--text2:#62655a;--text3:#9b9c8b;
+    --accent:#6f8f5a;--accent-h:#5e7c4b;
+    --underline:linear-gradient(90deg,#6f8f5a,#dd8ea0);
+    --garden:linear-gradient(180deg,#fffdf8 0%,#fffdf8 62%,#f2f1e4 84%,#e9ebd8 100%);
+    --blossom:#dd8ea0;--fruit:#d99a4e;--sage:#8ca35b;
+    --applied:#6f8f5a;--interview:#c77b98;--offer:#5e9d6a;
+  }
+  .theme-sage .lvl0{background:rgba(0,0,0,.045)} .theme-sage .lvl1{background:rgba(111,143,90,.30)}
+  .theme-sage .lvl2{background:rgba(111,143,90,.52)} .theme-sage .lvl3{background:rgba(94,124,75,.76)}
+  .theme-sage .lvl4{background:#5e7c4b}
+
+  .theme-bark{
+    --bg:#fdfbf6;--sidebar:#f4f0e6;--panel:#fffdf7;
+    --border:rgba(70,50,25,.11);--border-2:rgba(70,50,25,.17);
+    --hover:rgba(120,90,50,.05);--active:rgba(143,107,66,.14);--sel:#f3ece0;--tint:#f1e9db;
+    --text:#292420;--text2:#665c50;--text3:#9d9587;
+    --accent:#8f6b42;--accent-h:#77572f;
+    --underline:linear-gradient(90deg,#8f6b42,#5f7d3f);
+    --garden:linear-gradient(180deg,#fffdf7 0%,#fffdf7 62%,#f2ebdc 84%,#e9e2cf 100%);
+    --blossom:#d98aa0;--fruit:#d9843b;--sage:#5f7d3f;
+    --applied:#8f6b42;--interview:#8b6f9c;--offer:#5f7d3f;
+  }
+  .theme-bark .lvl0{background:rgba(0,0,0,.05)} .theme-bark .lvl1{background:rgba(95,125,63,.32)}
+  .theme-bark .lvl2{background:rgba(95,125,63,.54)} .theme-bark .lvl3{background:rgba(80,107,52,.78)}
+  .theme-bark .lvl4{background:#50723a}
+
+  /* HYBRID — Matcha greens/content everywhere + a Bark sidebar (trunk + foliage) */
+  .theme-hybrid{
+    --bg:#fdfdfb;--panel:#ffffff;
+    --border:rgba(38,40,20,.10);--border-2:rgba(38,40,20,.16);
+    --hover:rgba(50,70,35,.05);--active:rgba(79,125,74,.13);--sel:#eef4ec;--tint:#edf3e9;
+    --text:#23271f;--text2:#5b6152;--text3:#9aa08f;
+    --accent:#4f7d4a;--accent-h:#416a3d;
+    --underline:linear-gradient(90deg,#4f7a2e,#8ca35b);
+    --garden:linear-gradient(180deg,#fff 0%,#fff 64%,#f2f6ec 85%,#e7efda 100%);
+    --blossom:#e39aa6;--fruit:#e0863f;--sage:#8ca35b;
+    --applied:#4f7d4a;--interview:#8b5cf6;--offer:#2f9e44;
+    /* the one bark part: a soft, light bark sidebar (the trunk) */
+    --sidebar:#f5efe4;--sb-border:rgba(90,65,35,.11);--sb-text2:#6a6152;--sb-text3:#a49a86;
+  }
+  .theme-hybrid .lvl0{background:rgba(0,0,0,.05)} .theme-hybrid .lvl1{background:rgba(79,157,90,.32)}
+  .theme-hybrid .lvl2{background:rgba(79,157,90,.55)} .theme-hybrid .lvl3{background:rgba(63,139,79,.78)}
+  .theme-hybrid .lvl4{background:#3f8b4f}
+  /* on the bark sidebar, warm the nav text + chip borders so it reads as bark */
+  .theme-hybrid .ni{color:var(--sb-text2)} .theme-hybrid .ni .ct{color:var(--sb-text3)}
+  .theme-hybrid .chip{border-color:rgba(90,65,35,.16)}
+
+  /* ---- shared component styles (reference the tokens above) ---- */
+  .preview{max-width:1120px;margin:0 auto 42px}
+  .phead{display:flex;align-items:center;justify-content:space-between;margin:0 4px 12px}
+  .pname{font-weight:700;font-size:17px}
+  .psub{color:#8a8a8a;font-size:13px;margin-left:8px}
+  .pchips{display:flex;align-items:center;gap:8px}
+  .sw{width:17px;height:17px;border-radius:5px;display:inline-block;border:1px solid rgba(0,0,0,.12)}
+  .hex{color:#8a8a8a;font:12px var(--mono)}
+
+  .app{display:flex;height:560px;border:1px solid var(--border);border-radius:16px;overflow:hidden;
+    background:var(--bg);color:var(--text);box-shadow:0 14px 44px rgba(30,30,40,.12)}
+  .sb{width:196px;flex:0 0 196px;background:var(--sidebar);border-right:1px solid var(--sb-border,var(--border));
+    padding:12px 10px;display:flex;flex-direction:column;gap:2px}
+  .brand{display:flex;align-items:center;gap:9px;padding:6px 8px;margin-bottom:8px}
+  .lg{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--accent-h));
+    color:#fff;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center}
+  .bn{font-weight:600}
+  .ni{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;color:var(--text2);font-weight:450;font-size:13px}
+  .ni .ct{margin-left:auto;font:11px var(--mono);color:var(--text3)}
+  .ni .d{width:14px;height:14px;border-radius:4px;border:1.5px solid currentColor;opacity:.5}
+  .ni.on{background:var(--active);color:var(--accent);font-weight:550}
+  .ni.on .d{opacity:1;border-color:var(--accent)}
+  .chiprow{display:flex;flex-wrap:wrap;gap:5px;margin-top:14px;padding:0 4px}
+  .chip{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:var(--panel)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .top{height:46px;flex:0 0 46px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 16px;font-size:14px;font-weight:600}
+  .top .sp{flex:1}
+  .cta{height:28px;padding:0 11px;border:1px solid var(--border);background:var(--panel);border-radius:6px;color:var(--text2);font:12px var(--mono);cursor:pointer}
+  .cta.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .body{position:relative;flex:1;overflow:hidden;background:var(--garden)}
+  .ui{position:relative;z-index:1;padding:22px 24px;max-width:560px;display:flex;flex-direction:column;gap:20px}
+  .hello{color:var(--text3);font-size:13px;font-weight:500;margin-bottom:3px}
+  .name{position:relative;display:inline-block;font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.05;color:var(--text)}
+  .name::after{content:"";position:absolute;left:1px;bottom:-5px;width:44px;height:3px;border-radius:3px;background:var(--underline)}
+  .hmh{font-size:13px;margin-bottom:9px} .hmh b{font-weight:600}
+  .mut{color:var(--text3);font:11px var(--mono)}
+  .heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,11px);grid-auto-columns:11px;gap:3px;width:max-content}
+  .hc{width:11px;height:11px;border-radius:2px;display:block}
+  .leg{display:flex;align-items:center;gap:4px;margin-top:8px}
+  .leg .hc{width:10px;height:10px} .leg .mut:first-child{margin-right:3px} .leg .mut:last-child{margin-left:3px}
+  .mets{display:flex;flex-wrap:wrap;align-items:center;row-gap:12px}
+  .met{display:flex;flex-direction:column;gap:2px;padding-right:20px;margin-right:20px;border-right:1px solid var(--border)}
+  .met:last-child{border-right:0;margin-right:0;padding-right:0}
+  .mv{font:600 24px/1 var(--mono);letter-spacing:-.01em}
+  .ml{color:var(--text3);font-size:11px;font-weight:500}
+  .strk{flex-direction:row;align-items:center;gap:10px}
+  .ring{position:relative;display:flex;align-items:center;justify-content:center}
+  .rt{position:absolute;font:600 9px var(--mono);color:var(--text2)}
+  .pills{display:flex;gap:9px;flex-wrap:wrap}
+  .pill{font:12px var(--mono);display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 8px;border:1px solid currentColor;border-radius:20px}
+  .pill .pd{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+  .tree{position:absolute;right:8%;bottom:66px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:0}
+  .tcap{font-size:13px} .tcap b{font-weight:600}
+  .ground{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:16px;padding:13px 22px;border-top:1px solid var(--border);z-index:0}
+  .gc{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
+  .gd{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+</style>
+</head>
+<body>
+<div class="pg-title">Huntbench — theme options</div>
+<div class="pg-sub">Three garden-harmonious directions, each rendered on the real Home UI. Exact shades are tunable after you pick (or blend).</div>
+
+<!-- template rendered 3x by script, one per theme -->
+<div id="root"></div>
+
+<script>
+  const RING = `<svg width="36" height="36" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--accent)" stroke-opacity=".18" stroke-width="1.6"/><circle cx="7" cy="7" r="5" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="20.9 31.4" transform="rotate(-90 7 7)"/></svg><span class="rt">2/3</span>`;
+  const SPROUT = `<svg width="110" height="138" viewBox="0 0 132 164" fill="none" aria-hidden="true"><path d="M66 164V78" stroke="#7a9033" stroke-width="3.2" stroke-linecap="round"/><path d="M66 106C66 106 48 101 39 86C55 81 66 92 66 106Z" fill="#8ca35b" fill-opacity=".9"/><path d="M66 92C66 92 84 86 95 68C78 63 66 76 66 92Z" fill="#9db566" fill-opacity=".9"/><path d="M66 80C66 80 55 68 57 52C69 57 69 71 66 80Z" fill="#8ca35b" fill-opacity=".95"/><ellipse cx="66" cy="160" rx="38" ry="5.5" fill="#000" fill-opacity=".05"/></svg>`;
+
+  const THEMES = [
+    {cls:"theme-hybrid", name:"Matcha × Bark (hybrid)", sub:"matcha greens + garden · bark sidebar", hex:"#4f7d4a"},
+    {cls:"theme-matcha", name:"Matcha", sub:"forest green · warm paper", hex:"#4f7d4a"},
+    {cls:"theme-sage",   name:"Sage & Sakura", sub:"muted sage + pink · cream", hex:"#6f8f5a"},
+    {cls:"theme-bark",   name:"Bark & Leaf", sub:"earthy bark · green as data", hex:"#8f6b42"},
+  ];
+
+  const app = () => `
+    <div class="app">
+      <aside class="sb">
+        <div class="brand"><span class="lg">h</span><span class="bn">Huntbench</span></div>
+        <div class="ni on"><span class="d"></span>Home</div>
+        <div class="ni"><span class="d"></span>All jobs<span class="ct">588</span></div>
+        <div class="ni"><span class="d"></span>Saved<span class="ct">9</span></div>
+        <div class="ni"><span class="d"></span>Board</div>
+        <div class="ni"><span class="d"></span>Inbox</div>
+        <div class="chiprow"><span class="chip on">uae</span><span class="chip">remote</span><span class="chip">europe</span><span class="chip">india</span></div>
+      </aside>
+      <div class="main">
+        <div class="top">Home<span class="sp"></span><button class="cta">+ Add job</button><button class="cta">⟳ Scan</button></div>
+        <div class="body">
+          <div class="ui">
+            <div class="greet"><div class="hello">Good morning</div><div class="name">Rachit</div></div>
+            <div class="hm">
+              <div class="hmh"><b>Activity</b> <span class="mut">128 actions in the last 10 weeks</span></div>
+              <div class="heat"></div>
+              <div class="leg"><span class="mut">Less</span><i class="hc lvl0"></i><i class="hc lvl1"></i><i class="hc lvl2"></i><i class="hc lvl3"></i><i class="hc lvl4"></i><span class="mut">More</span></div>
+            </div>
+            <div class="mets">
+              <div class="met"><div class="mv" style="color:var(--accent)">42</div><div class="ml">Applications</div></div>
+              <div class="met"><div class="mv" style="color:var(--interview)">3</div><div class="ml">Interviewing</div></div>
+              <div class="met"><div class="mv" style="color:var(--offer)">1</div><div class="ml">Offers</div></div>
+              <div class="met strk"><div><div class="mv" style="color:var(--accent)">5</div><div class="ml">day streak</div></div><div class="ring">${RING}</div></div>
+              <div class="met"><div class="mv" style="color:var(--sage)">6</div><div class="ml">New since visit</div></div>
+            </div>
+            <div class="pills"><span class="pill" style="color:var(--applied)"><i class="pd"></i>applied</span><span class="pill" style="color:var(--interview)"><i class="pd"></i>interviewing</span><span class="pill" style="color:var(--offer)"><i class="pd"></i>offer</span></div>
+          </div>
+          <div class="tree">${SPROUT}<div class="tcap"><b>Mature</b> <span style="color:var(--offer)">89% grown</span></div></div>
+          <div class="ground"><span class="gc"><i class="gd" style="background:var(--blossom)"></i>2 blossoms · interviews</span><span class="gc"><i class="gd" style="background:var(--fruit)"></i>1 fruit · offers</span><span class="gc"><i class="gd" style="background:var(--sage)"></i>garden is lush</span></div>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById("root").innerHTML = THEMES.map(t => `
+    <section class="preview ${t.cls}">
+      <div class="phead">
+        <div><span class="pname">${t.name}</span><span class="psub">${t.sub}</span></div>
+        <div class="pchips"><span class="sw" style="background:${t.hex}"></span><span class="hex">${t.hex}</span></div>
+      </div>
+      ${app()}
+    </section>`).join("");
+
+  // populate every heatmap with the same activity shape (only the colour ramp differs per theme)
+  const patt = i => [0,0,1,0,0,2,0,1,0,0,3,0,0,1,0,2,0,0,4,0,1,0,0,2,0,0,1,0,3,0][(i*7+3)%30];
+  document.querySelectorAll(".heat").forEach(h => {
+    for(let i=0;i<70;i++){ const c=document.createElement("i"); c.className="hc lvl"+patt(i); h.appendChild(c); }
+  });
+</script>
+</body>
+</html>
